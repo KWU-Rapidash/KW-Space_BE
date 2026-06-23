@@ -22,6 +22,7 @@ import com.example.KW_SPACE.user.domain.UserRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class AuthServiceTest {
@@ -44,12 +45,12 @@ class AuthServiceTest {
 		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
 				.willReturn(KlasAuthResult.success("2025404000", "이효원"));
 		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
-		given(userRepository.save(any(User.class))).willAnswer(invocation -> invocation.getArgument(0));
+		given(userRepository.saveAndFlush(any(User.class))).willAnswer(invocation -> invocation.getArgument(0));
 
 		SignupResponse response = authService.signup(request);
 
 		ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-		verify(userRepository).save(userCaptor.capture());
+		verify(userRepository).saveAndFlush(userCaptor.capture());
 		User savedUser = userCaptor.getValue();
 
 		assertThat(savedUser.getKlasId()).isEqualTo("2025404000");
@@ -84,6 +85,21 @@ class AuthServiceTest {
 						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS));
 
 		verifyNoInteractions(passwordEncoder);
+	}
+
+	@Test
+	void signupMapsDuplicateConstraintViolationToDuplicatedKlasId() {
+		SignupRequest request = new SignupRequest("요청이름", "2025404000", "valid-klas-password", "service-password");
+		given(userRepository.existsByKlasId("2025404000")).willReturn(false);
+		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
+				.willReturn(KlasAuthResult.success("2025404000", "이효원"));
+		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
+		given(userRepository.saveAndFlush(any(User.class)))
+				.willThrow(new DataIntegrityViolationException("duplicated klas id"));
+
+		assertThatThrownBy(() -> authService.signup(request))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_DUPLICATED_KLAS_ID));
 	}
 
 	@Test

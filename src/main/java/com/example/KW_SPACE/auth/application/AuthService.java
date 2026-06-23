@@ -11,12 +11,12 @@ import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class AuthService {
 
 	private final UserRepository userRepository;
@@ -44,11 +44,12 @@ public class AuthService {
 
 		String passwordHash = passwordEncoder.encode(request.password());
 		String name = resolveName(request.name(), klasAuthResult.name());
-		User user = userRepository.save(User.create(request.klasId(), name, null, passwordHash));
+		User user = saveUser(request.klasId(), name, passwordHash);
 
 		return SignupResponse.from(user);
 	}
 
+	@Transactional(readOnly = true)
 	public LoginResult login(LoginRequest request) {
 		User user = userRepository.findByKlasId(request.klasId())
 				.orElseThrow(() -> new AuthException(AuthErrorCode.AUTH_INVALID_CREDENTIALS));
@@ -59,6 +60,14 @@ public class AuthService {
 		String accessToken = jwtTokenProvider.createAccessToken(user);
 
 		return new LoginResult(accessToken, new LoginResponse(true, "로그인에 성공했습니다."));
+	}
+
+	private User saveUser(String klasId, String name, String passwordHash) {
+		try {
+			return userRepository.saveAndFlush(User.create(klasId, name, null, passwordHash));
+		} catch (DataIntegrityViolationException exception) {
+			throw new AuthException(AuthErrorCode.AUTH_DUPLICATED_KLAS_ID);
+		}
 	}
 
 	private String resolveName(String requestName, String klasName) {
