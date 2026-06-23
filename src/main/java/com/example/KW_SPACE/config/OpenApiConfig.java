@@ -8,15 +8,19 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +39,8 @@ public class OpenApiConfig {
 				.version(version))
 			.tags(List.of(
 				new Tag().name("Health").description("서비스 상태 확인 API"),
-				new Tag().name("Auth").description("KW Space API Spec - Auth")
+				new Tag().name("Auth").description("KW Space API Spec - Auth"),
+				new Tag().name("Reserve").description("KW Space API Spec - Reserve")
 			))
 			.components(new Components()
 				.addSecuritySchemes("accessTokenCookie", new SecurityScheme()
@@ -66,7 +71,29 @@ public class OpenApiConfig {
 						field("klasId", "KLAS 학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
 						field("newPassword", "새 서비스 비밀번호")),
-					messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부"))));
+					messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부")))
+				.addPathItem("/api/v1/reservations", securedPost("Reserve", "강의실 예약", "선택한 날짜, 강의실, 시간대로 예약을 생성한다.",
+					object("ReservationCreateRequest",
+						field("classroomId", "강의실 식별자"),
+						field("date", "예약 날짜"),
+						field("startTime", "예약 시작 시간"),
+						field("endTime", "예약 종료 시간")),
+					reservationResponse()))
+				.addPathItem("/api/v1/classrooms/{classroomId}/times", securedGet("Reserve", "강의실 예약 가능 시간 조회",
+					"특정 강의실의 날짜별 시간대 예약 가능 여부를 조회한다.",
+					List.of(pathParameter("classroomId", "강의실 식별자"), queryParameter("date", "조회 날짜")),
+					arrayResponse("ClassroomTimeAvailabilityList", classroomTimeAvailability())))
+				.addPathItem("/api/v1/classrooms", securedGet("Reserve", "특정 날짜/층의 전체 강의실 조회",
+					"특정 날짜와 층의 예약 가능/불가 강의실 목록을 조회한다.",
+					List.of(queryParameter("floor", "층"), queryParameter("date", "조회 날짜")),
+					arrayResponse("ClassroomAvailabilityList", classroomAvailability())))
+				.addPathItem("/api/v1/user/reservations", securedGet("Reserve", "사용자별 예약 정보",
+					"내 예약 정보를 예약 날짜 내림차순으로 조회한다.",
+					List.of(optionalQueryParameter("status", "예약 상태 필터")),
+					arrayResponse("UserReservationList", reservationSchema())))
+				.addPathItem("/api/v1/reservations/{reservationId}", securedDelete("Reserve", "예약 취소",
+					"예약 식별자로 내 예약을 취소한다.",
+					List.of(pathParameter("reservationId", "예약 식별자")))));
 	}
 
 	private static PathItem post(String tag, String summary, String description, Schema<?> request, Schema<?> response) {
@@ -76,6 +103,35 @@ public class OpenApiConfig {
 			.description(description)
 			.requestBody(jsonRequest(request))
 			.responses(ok(response.getName(), response)));
+	}
+
+	private static PathItem securedPost(String tag, String summary, String description, Schema<?> request, Schema<?> response) {
+		return new PathItem().post(securedOperation(tag, summary, description)
+			.requestBody(jsonRequest(request))
+			.responses(ok(response.getName(), response)));
+	}
+
+	private static PathItem securedGet(String tag, String summary, String description, List<Parameter> parameters,
+		Schema<?> response) {
+		Operation operation = securedOperation(tag, summary, description)
+			.responses(ok(response.getName(), response));
+		parameters.forEach(operation::addParametersItem);
+		return new PathItem().get(operation);
+	}
+
+	private static PathItem securedDelete(String tag, String summary, String description, List<Parameter> parameters) {
+		Operation operation = securedOperation(tag, summary, description)
+			.responses(noContent());
+		parameters.forEach(operation::addParametersItem);
+		return new PathItem().delete(operation);
+	}
+
+	private static Operation securedOperation(String tag, String summary, String description) {
+		return new Operation()
+			.addTagsItem(tag)
+			.summary(summary)
+			.description(description)
+			.addSecurityItem(new SecurityRequirement().addList("accessTokenCookie"));
 	}
 
 	private static RequestBody jsonRequest(Schema<?> schema) {
@@ -91,6 +147,13 @@ public class OpenApiConfig {
 				.content(jsonContent(schema)))
 			.addApiResponse("400", new ApiResponse().description("잘못된 요청"))
 			.addApiResponse("401", new ApiResponse().description("인증 실패 또는 인증 필요"));
+	}
+
+	private static ApiResponses noContent() {
+		return new ApiResponses()
+			.addApiResponse("204", new ApiResponse().description("No Content"))
+			.addApiResponse("401", new ApiResponse().description("인증 필요"))
+			.addApiResponse("404", new ApiResponse().description("대상을 찾을 수 없음"));
 	}
 
 	private static Content jsonContent(Schema<?> schema) {
@@ -110,9 +173,63 @@ public class OpenApiConfig {
 		return new StringSchema().name(name).description(description);
 	}
 
+	private static Parameter pathParameter(String name, String description) {
+		return new Parameter().in("path").required(true).name(name).description(description).schema(new StringSchema());
+	}
+
+	private static Parameter queryParameter(String name, String description) {
+		return new Parameter().in("query").required(true).name(name).description(description).schema(new StringSchema());
+	}
+
+	private static Parameter optionalQueryParameter(String name, String description) {
+		return new Parameter().in("query").required(false).name(name).description(description).schema(new StringSchema());
+	}
+
 	private static Schema<?> messageResponse(String name, String message) {
 		return object(name,
 			new BooleanSchema().name("success").description("성공 여부"),
 			new StringSchema().name("message").description(message));
+	}
+
+	private static Schema<?> reservationResponse() {
+		return object("ReservationResponse",
+			new StringSchema().name("reservationId").description("예약 식별자"),
+			new StringSchema().name("date").description("예약 날짜"),
+			new StringSchema().name("classroomNumber").description("강의실 번호"),
+			new StringSchema().name("startTime").description("예약 시작 시간"),
+			new StringSchema().name("endTime").description("예약 종료 시간"),
+			new StringSchema().name("status").description("예약 상태"));
+	}
+
+	private static Schema<?> reservationSchema() {
+		return object("UserReservationResponse",
+			new StringSchema().name("reservationId").description("예약 식별자"),
+			new StringSchema().name("date").description("예약 날짜"),
+			new StringSchema().name("classroomNumber").description("강의실 번호"),
+			new StringSchema().name("reserverName").description("예약자 정보"),
+			new StringSchema().name("startTime").description("예약 시작 시간"),
+			new StringSchema().name("endTime").description("예약 종료 시간"),
+			new StringSchema().name("status").description("예약 상태"));
+	}
+
+	private static Schema<?> classroomTimeAvailability() {
+		return object("ClassroomTimeAvailabilityResponse",
+			new StringSchema().name("time").description("시간대"),
+			new BooleanSchema().name("available").description("예약 가능 여부"));
+	}
+
+	private static Schema<?> classroomAvailability() {
+		return object("ClassroomAvailabilityResponse",
+			new StringSchema().name("classroomId").description("강의실 식별자"),
+			new IntegerSchema().name("floor").description("층"),
+			new StringSchema().name("classroomNumber").description("강의실 번호"),
+			new BooleanSchema().name("available").description("예약 가능 여부"));
+	}
+
+	private static Schema<?> arrayResponse(String name, Schema<?> itemSchema) {
+		ArraySchema schema = new ArraySchema();
+		schema.name(name);
+		schema.items(itemSchema);
+		return schema;
 	}
 }

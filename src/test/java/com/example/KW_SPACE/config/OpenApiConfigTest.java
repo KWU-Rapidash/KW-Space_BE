@@ -32,6 +32,12 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.paths['/api/auth/login'].post.summary").value("로그인"))
 			.andExpect(jsonPath("$.paths['/api/auth/signup'].post.summary").value("회원가입"))
 			.andExpect(jsonPath("$.paths['/api/auth/password-reset'].post.summary").value("비밀번호 재설정"))
+			.andExpect(jsonPath("$.paths['/api/v1/reservations'].post.summary").value("강의실 예약"))
+			.andExpect(jsonPath("$.paths['/api/v1/classrooms/{classroomId}/times'].get.summary")
+				.value("강의실 예약 가능 시간 조회"))
+			.andExpect(jsonPath("$.paths['/api/v1/classrooms'].get.summary").value("특정 날짜/층의 전체 강의실 조회"))
+			.andExpect(jsonPath("$.paths['/api/v1/user/reservations'].get.summary").value("사용자별 예약 정보"))
+			.andExpect(jsonPath("$.paths['/api/v1/reservations/{reservationId}'].delete.summary").value("예약 취소"))
 			.andExpect(jsonPath("$.paths['/api/auth/login'].post.security").doesNotExist());
 	}
 
