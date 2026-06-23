@@ -1,20 +1,20 @@
 ## Summary
-- 
+-
 
 ## Why
-- 
+-
 
 ## Changes
-- 
+-
 
 ## Testing
-- 
+-
 
 ## Risks
-- 
+-
 
 ## Rollback
-- 
+-
 
 ## Checklist
 - [ ] 요청 범위만 변경했는가
