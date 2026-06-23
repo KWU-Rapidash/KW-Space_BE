@@ -2,12 +2,12 @@ package com.example.KW_SPACE.auth.presentation;
 
 import com.example.KW_SPACE.auth.application.AuthService;
 import com.example.KW_SPACE.auth.application.LoginResult;
+import com.example.KW_SPACE.auth.jwt.JwtProperties;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import jakarta.validation.Valid;
-import java.time.Duration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -23,9 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
 	private final AuthService authService;
+	private final JwtProperties jwtProperties;
 
-	public AuthController(AuthService authService) {
+	public AuthController(AuthService authService, JwtProperties jwtProperties) {
 		this.authService = authService;
+		this.jwtProperties = jwtProperties;
 	}
 
 	@PostMapping("/signup")
@@ -49,7 +51,7 @@ public class AuthController {
 				.secure(true)
 				.sameSite("Lax")
 				.path("/")
-				.maxAge(Duration.ofHours(1))
+				.maxAge(jwtProperties.accessTokenTtl())
 				.build();
 	}
 }

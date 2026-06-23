@@ -17,6 +17,7 @@ import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
+import com.example.KW_SPACE.config.JwtConfig;
 import com.example.KW_SPACE.config.SecurityConfig;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -25,10 +26,15 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JwtConfig.class})
+@TestPropertySource(properties = {
+		"kw-space.auth.jwt.secret=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		"kw-space.auth.jwt.access-token-ttl=1h"
+})
 class AuthControllerTest {
 
 	@Autowired
