@@ -53,4 +53,11 @@ class UserControllerTest {
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다. klasId=2022202015"));
 	}
+
+	@Test
+	void blankKlasIdReturnsBadRequest() throws Exception {
+		mockMvc.perform(get("/api/v1/user")
+						.param("klasId", " "))
+				.andExpect(status().isBadRequest());
+	}
 }
