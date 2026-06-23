@@ -57,19 +57,19 @@ public class OpenApiConfig {
 						.description("서비스 상태를 확인한다.")
 						.responses(ok("HealthResponse", object("HealthResponse",
 							new StringSchema().name("status").description("서비스 상태"))))))
-				.addPathItem("/api/auth/login", post("Auth", "로그인", "학번과 비밀번호로 로그인하고 JWT Cookie를 발급한다.",
+				.addPathItem("/api/v1/auth/login", post("Auth", "로그인", "학번과 비밀번호로 로그인하고 JWT Cookie를 발급한다.",
 					object("LoginRequest", field("klasId", "학번"), field("password", "비밀번호")),
 					messageResponse("LoginResponse", "로그인 성공 여부와 JWT Cookie 발급 결과")))
-				.addPathItem("/api/auth/signup", post("Auth", "회원가입", "KLAS 재학생 인증 후 서비스 계정을 생성한다.",
+				.addPathItem("/api/v1/auth/signup", post("Auth", "회원가입", "KLAS 재학생 인증 후 서비스 계정을 생성한다.",
 					object("SignupRequest",
-						field("klasId", "KLAS 학번"),
+						field("klasId", "학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
 						field("password", "서비스 로그인 비밀번호"),
 						field("phoneNumber", "전화번호")),
 					messageResponse("SignupResponse", "회원가입 성공 여부")))
-				.addPathItem("/api/auth/password-reset", post("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
+				.addPathItem("/api/v1/auth/password-reset", post("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
 					object("PasswordResetRequest",
-						field("klasId", "KLAS 학번"),
+						field("klasId", "학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
 						field("newPassword", "새 서비스 비밀번호")),
 					messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부")))
