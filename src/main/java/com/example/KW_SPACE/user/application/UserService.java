@@ -16,9 +16,9 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public UserInfoResponse getMyInfo(String studentNumber) {
-        User user = userRepository.findByStudentNumber(studentNumber)
-                .orElseThrow(() -> new UserNotFoundException(studentNumber));
+    public UserInfoResponse getMyInfo(String klasId) {
+        User user = userRepository.findByKlasId(klasId)
+                .orElseThrow(() -> new UserNotFoundException(klasId));
 
         return UserInfoResponse.from(user);
     }

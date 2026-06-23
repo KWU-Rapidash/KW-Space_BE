@@ -22,7 +22,7 @@ public class User {
     private String name;
 
     @Column(nullable = false, unique = true, length = 20)
-    private String studentNumber;
+    private String klasId;
 
     @Column(nullable = false)
     private String password;
@@ -33,16 +33,16 @@ public class User {
     protected User() {
     }
 
-    public User(String name, String studentNumber, String password, String phoneNumber) {
+    public User(String name, String klasId, String password, String phoneNumber) {
         this.name = name;
-        this.studentNumber = studentNumber;
+        this.klasId = klasId;
         this.password = password;
         this.phoneNumber = phoneNumber;
     }
 
     public UUID getId() { return id; }
     public String getName() { return name; }
-    public String getStudentNumber() { return studentNumber; }
+    public String getKlasId() { return klasId; }
     public String getPassword() { return password; }
     public String getPhoneNumber() { return phoneNumber; }
 

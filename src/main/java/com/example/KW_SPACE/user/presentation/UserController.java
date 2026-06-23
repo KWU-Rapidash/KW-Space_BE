@@ -22,7 +22,7 @@ public class UserController {
 
     /** JWT 인가 적용 전 임시 엔드포인트다. #31에서 인증 정보 기반으로 전환한다. */
     @GetMapping({"", "/"})
-    public UserInfoResponse getMyInfo(@RequestParam @NotBlank String studentNumber) {
-        return userService.getMyInfo(studentNumber);
+    public UserInfoResponse getMyInfo(@RequestParam @NotBlank String klasId) {
+        return userService.getMyInfo(klasId);
     }
 }
