@@ -3,6 +3,7 @@ package com.example.KW_SPACE.reservation.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.user.domain.User;
 import java.time.LocalDate;
 import java.time.LocalTime;

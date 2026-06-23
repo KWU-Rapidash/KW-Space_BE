@@ -1,4 +1,4 @@
-package com.example.KW_SPACE.reservation.domain;
+package com.example.KW_SPACE.classroom.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,14 +20,14 @@ class ClassroomRepositoryTest {
 
 	@Test
 	void savesAndFindsClassroomsByFloor() {
-		classroomRepository.save(Classroom.create(4, "401"));
 		classroomRepository.save(Classroom.create(4, "402"));
+		classroomRepository.save(Classroom.create(4, "401"));
 		classroomRepository.save(Classroom.create(5, "501"));
 
-		assertThat(classroomRepository.findByFloor(4))
+		assertThat(classroomRepository.findByFloorOrderByRoomNumberAsc(4))
 				.hasSize(2)
 				.extracting(Classroom::getRoomNumber)
-				.containsExactlyInAnyOrder("401", "402");
+				.containsExactly("401", "402");
 	}
 
 	@Test

@@ -1,4 +1,4 @@
-package com.example.KW_SPACE.reservation.domain;
+package com.example.KW_SPACE.classroom.domain;
 
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
 
-	List<Classroom> findByFloor(int floor);
+	List<Classroom> findByFloorOrderByRoomNumberAsc(int floor);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select c from Classroom c where c.id = :id")
