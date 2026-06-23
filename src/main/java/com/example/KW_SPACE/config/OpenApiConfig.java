@@ -64,7 +64,8 @@ public class OpenApiConfig {
 					object("SignupRequest",
 						field("klasId", "학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
-						field("password", "서비스 로그인 비밀번호")),
+						field("password", "서비스 로그인 비밀번호"),
+						field("phoneNumber", "전화번호")),
 					messageResponse("SignupResponse", "회원가입 성공 여부")))
 				.addPathItem("/api/v1/auth/password-reset", post("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
 					object("PasswordResetRequest",

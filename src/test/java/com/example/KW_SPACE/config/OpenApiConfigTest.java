@@ -38,7 +38,7 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.requestBody.content['application/json'].schema.properties.password")
 				.exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.requestBody.content['application/json'].schema.properties.phoneNumber")
-				.doesNotExist())
+				.exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.summary").value("비밀번호 재설정"))
 			.andExpect(jsonPath("$.paths['/api/v1/reservations'].post.summary").value("강의실 예약"))
 			.andExpect(jsonPath("$.paths['/api/v1/classrooms/{classroomId}/times'].get.summary")
