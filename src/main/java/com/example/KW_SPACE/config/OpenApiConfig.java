@@ -90,7 +90,7 @@ public class OpenApiConfig {
 					arrayResponse("ClassroomAvailabilityList", classroomAvailability())))
 				.addPathItem("/api/v1/user/reservations", securedGet("Reserve", "사용자별 예약 정보",
 					"내 예약 정보를 예약 날짜 내림차순으로 조회한다.",
-					List.of(optionalQueryParameter("status", "예약 상태 필터")),
+					List.of(reservationStatusQueryParameter()),
 					arrayResponse("UserReservationList", reservationSchema())))
 				.addPathItem("/api/v1/reservations/{reservationId}", securedDelete("Reserve", "예약 취소",
 					"예약 식별자로 내 예약을 취소한다.",
@@ -197,8 +197,13 @@ public class OpenApiConfig {
 		return new Parameter().in("query").required(true).name(name).description(description).schema(new StringSchema());
 	}
 
-	private static Parameter optionalQueryParameter(String name, String description) {
-		return new Parameter().in("query").required(false).name(name).description(description).schema(new StringSchema());
+	private static Parameter reservationStatusQueryParameter() {
+		return new Parameter()
+			.in("query")
+			.required(false)
+			.name("status")
+			.description("예약 상태 필터")
+			.schema(reservationStatusSchema());
 	}
 
 	private static Schema<?> messageResponse(String name, String message) {
@@ -214,7 +219,7 @@ public class OpenApiConfig {
 			new StringSchema().name("classroomNumber").description("강의실 번호"),
 			new StringSchema().name("startTime").description("예약 시작 시간"),
 			new StringSchema().name("endTime").description("예약 종료 시간"),
-			new StringSchema().name("status").description("예약 상태"));
+			reservationStatusSchema().name("status"));
 	}
 
 	private static Schema<?> reservationSchema() {
@@ -225,7 +230,14 @@ public class OpenApiConfig {
 			new StringSchema().name("reserverName").description("예약자 정보"),
 			new StringSchema().name("startTime").description("예약 시작 시간"),
 			new StringSchema().name("endTime").description("예약 종료 시간"),
-			new StringSchema().name("status").description("예약 상태"));
+			reservationStatusSchema().name("status"));
+	}
+
+	private static Schema<?> reservationStatusSchema() {
+		StringSchema schema = new StringSchema();
+		schema.description("예약 상태");
+		schema.setEnum(List.of("RESERVED", "CANCELLED"));
+		return schema;
 	}
 
 	private static Schema<?> classroomTimeAvailability() {
