@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,6 +22,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
+	private static final Set<String> PUBLIC_GET_PATHS = Set.of("/api/health", "/api/health/");
+	private static final Set<String> PUBLIC_POST_PATHS = Set.of(
+			"/api/v1/auth/signup",
+			"/api/v1/auth/login",
+			"/api/v1/auth/password-reset",
+			"/api/v1/auth/logout"
+	);
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final CustomUserDetailsService customUserDetailsService;
@@ -32,6 +40,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		this.jwtTokenProvider = jwtTokenProvider;
 		this.customUserDetailsService = customUserDetailsService;
 		this.authErrorResponseWriter = authErrorResponseWriter;
+	}
+
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+		return isPublicRequest(request, "GET", PUBLIC_GET_PATHS)
+				|| isPublicRequest(request, "POST", PUBLIC_POST_PATHS);
 	}
 
 	@Override
@@ -90,5 +104,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				.findFirst()
 				.map(Cookie::getValue)
 				.orElse(null);
+	}
+
+	private boolean isPublicRequest(HttpServletRequest request, String method, Set<String> paths) {
+		return method.equals(request.getMethod()) && paths.contains(resolveRequestPath(request));
+	}
+
+	private String resolveRequestPath(HttpServletRequest request) {
+		String servletPath = request.getServletPath();
+		if (servletPath != null && !servletPath.isBlank()) {
+			return servletPath;
+		}
+
+		return request.getRequestURI();
 	}
 }

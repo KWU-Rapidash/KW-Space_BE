@@ -3,6 +3,7 @@ package com.example.KW_SPACE.auth.jwt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
@@ -12,6 +13,7 @@ import com.example.KW_SPACE.auth.security.CustomUserDetails;
 import com.example.KW_SPACE.auth.security.CustomUserDetailsService;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRole;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,20 @@ class JwtAuthenticationFilterTest {
 
 		assertThat(response.getStatus()).isEqualTo(200);
 		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+		verifyNoInteractions(jwtTokenProvider, customUserDetailsService);
+	}
+
+	@Test
+	void skipsPublicEndpointEvenWhenAccessTokenCookieExists() throws Exception {
+		MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+		request.setCookies(new Cookie("accessToken", "invalid-token"));
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain filterChain = mock(FilterChain.class);
+
+		filter.doFilter(request, response, filterChain);
+
+		assertThat(response.getStatus()).isEqualTo(200);
+		verify(filterChain).doFilter(request, response);
 		verifyNoInteractions(jwtTokenProvider, customUserDetailsService);
 	}
 

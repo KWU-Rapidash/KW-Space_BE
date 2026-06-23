@@ -12,11 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.KW_SPACE.auth.application.AuthService;
 import com.example.KW_SPACE.auth.application.LoginResult;
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
+import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.exception.AuthException;
+import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
+import com.example.KW_SPACE.auth.security.CustomUserDetailsService;
 import com.example.KW_SPACE.config.JwtConfig;
 import com.example.KW_SPACE.config.SecurityConfig;
 import org.hamcrest.Matchers;
@@ -30,7 +33,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtConfig.class})
+@Import({SecurityConfig.class, JwtConfig.class, AuthErrorResponseWriter.class})
 @TestPropertySource(properties = {
 		"kw-space.auth.jwt.secret=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		"kw-space.auth.jwt.access-token-ttl=1h"
@@ -42,6 +45,12 @@ class AuthControllerTest {
 
 	@MockitoBean
 	private AuthService authService;
+
+	@MockitoBean
+	private JwtTokenProvider jwtTokenProvider;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
 
 	@Test
 	void signupReturnsCreatedResponse() throws Exception {
