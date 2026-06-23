@@ -25,7 +25,7 @@ class UserServiceTest {
 
 		assertThat(response.username()).isEqualTo("홍길동");
 		assertThat(response.klasId()).isEqualTo("2022202015");
-		assertThat(response.phoneNumber()).isEqualTo("010-1234-5678");
+		assertThat(response.phoneNumber()).isEqualTo("010-****-5678");
 	}
 
 	@Test
