@@ -4,6 +4,7 @@ import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponse;
 import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.klas.KlasAuthServerUnavailableException;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -25,12 +26,28 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<AuthErrorResponse> handleValidationException(MethodArgumentNotValidException exception) {
-		AuthErrorCode errorCode = exception.getBindingResult().getFieldErrors().stream()
-				.anyMatch(this::isPasswordPolicyViolation)
-				? AuthErrorCode.AUTH_PASSWORD_POLICY_VIOLATION
-				: AuthErrorCode.AUTH_REQUIRED_FIELD_MISSING;
+		List<FieldError> fieldErrors = exception.getBindingResult().getFieldErrors();
+		AuthErrorCode errorCode = resolveValidationErrorCode(fieldErrors);
 
 		return toResponse(errorCode);
+	}
+
+	private AuthErrorCode resolveValidationErrorCode(List<FieldError> fieldErrors) {
+		if (fieldErrors.stream().anyMatch(this::isRequiredFieldMissing)) {
+			return AuthErrorCode.AUTH_REQUIRED_FIELD_MISSING;
+		}
+
+		if (fieldErrors.stream().anyMatch(this::isPasswordPolicyViolation)) {
+			return AuthErrorCode.AUTH_PASSWORD_POLICY_VIOLATION;
+		}
+
+		return AuthErrorCode.AUTH_REQUIRED_FIELD_MISSING;
+	}
+
+	private boolean isRequiredFieldMissing(FieldError fieldError) {
+		String code = fieldError.getCode();
+
+		return "NotBlank".equals(code) || "NotEmpty".equals(code) || "NotNull".equals(code);
 	}
 
 	private boolean isPasswordPolicyViolation(FieldError fieldError) {

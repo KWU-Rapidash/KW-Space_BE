@@ -81,6 +81,16 @@ class GlobalExceptionHandlerTest {
 				.andExpect(jsonPath("$.message").value("비밀번호 정책을 만족하지 않습니다."));
 	}
 
+	@Test
+	void prioritizesMissingRequiredFieldsWhenValidationErrorsAreMixed() throws Exception {
+		mockMvc.perform(post("/test/auth/validate")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"password\":\"short\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"))
+				.andExpect(jsonPath("$.message").value("필수 입력값이 누락되었습니다."));
+	}
+
 	@RestController
 	private static class TestAuthController {
 
