@@ -95,7 +95,7 @@ public class OpenApiConfig {
 				.addPathItem("/api/v1/reservations/{reservationId}", securedDelete("Reserve", "예약 취소",
 					"예약 식별자로 내 예약을 취소한다.",
 					List.of(pathParameter("reservationId", "예약 식별자"))))
-				.addPathItem("/api/v1/user/", new PathItem()
+				.addPathItem("/api/v1/user", new PathItem()
 					.get(securedOperation("User", "내 정보 조회", "내 학번, 이름, 전화번호를 조회한다.")
 						.responses(ok("UserInfoResponse", userInfoResponse())))
 					.delete(securedOperation("User", "회원 탈퇴", "내 계정을 탈퇴 처리한다.")
