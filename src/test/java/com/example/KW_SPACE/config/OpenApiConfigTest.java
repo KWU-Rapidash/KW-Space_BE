@@ -38,6 +38,11 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.paths['/api/v1/classrooms'].get.summary").value("특정 날짜/층의 전체 강의실 조회"))
 			.andExpect(jsonPath("$.paths['/api/v1/user/reservations'].get.summary").value("사용자별 예약 정보"))
 			.andExpect(jsonPath("$.paths['/api/v1/reservations/{reservationId}'].delete.summary").value("예약 취소"))
+			.andExpect(jsonPath("$.paths['/api/v1/user/'].get.summary").value("내 정보 조회"))
+			.andExpect(jsonPath("$.paths['/api/v1/user/'].delete.summary").value("회원 탈퇴"))
+			.andExpect(jsonPath("$.paths['/api/v1/user/password'].patch.summary").value("내 비밀번호 수정"))
+			.andExpect(jsonPath("$.paths['/api/v1/user/phone'].patch.summary").value("내 전화번호 수정"))
+			.andExpect(jsonPath("$.paths['/api/v1/user/'].get.security[0].accessTokenCookie[0]").doesNotExist())
 			.andExpect(jsonPath("$.paths['/api/auth/login'].post.security").doesNotExist());
 	}
 

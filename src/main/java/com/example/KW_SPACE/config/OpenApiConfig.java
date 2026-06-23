@@ -40,7 +40,8 @@ public class OpenApiConfig {
 			.tags(List.of(
 				new Tag().name("Health").description("서비스 상태 확인 API"),
 				new Tag().name("Auth").description("KW Space API Spec - Auth"),
-				new Tag().name("Reserve").description("KW Space API Spec - Reserve")
+				new Tag().name("Reserve").description("KW Space API Spec - Reserve"),
+				new Tag().name("User").description("KW Space API Spec - User")
 			))
 			.components(new Components()
 				.addSecuritySchemes("accessTokenCookie", new SecurityScheme()
@@ -93,7 +94,16 @@ public class OpenApiConfig {
 					arrayResponse("UserReservationList", reservationSchema())))
 				.addPathItem("/api/v1/reservations/{reservationId}", securedDelete("Reserve", "예약 취소",
 					"예약 식별자로 내 예약을 취소한다.",
-					List.of(pathParameter("reservationId", "예약 식별자")))));
+					List.of(pathParameter("reservationId", "예약 식별자"))))
+				.addPathItem("/api/v1/user/", new PathItem()
+					.get(securedOperation("User", "내 정보 조회", "내 학번, 이름, 전화번호를 조회한다.")
+						.responses(ok("UserInfoResponse", userInfoResponse())))
+					.delete(securedOperation("User", "회원 탈퇴", "내 계정을 탈퇴 처리한다.")
+						.responses(noContent())))
+				.addPathItem("/api/v1/user/password", securedPatch("User", "내 비밀번호 수정", "기존 비밀번호 확인 후 새 비밀번호로 수정한다.",
+					object("PasswordUpdateRequest", field("currentPassword", "기존 비밀번호"), field("newPassword", "새 비밀번호"))))
+				.addPathItem("/api/v1/user/phone", securedPatch("User", "내 전화번호 수정", "내 전화번호를 새 전화번호로 수정한다.",
+					object("PhoneUpdateRequest", field("phoneNumber", "새 전화번호")))));
 	}
 
 	private static PathItem post(String tag, String summary, String description, Schema<?> request, Schema<?> response) {
@@ -124,6 +134,12 @@ public class OpenApiConfig {
 			.responses(noContent());
 		parameters.forEach(operation::addParametersItem);
 		return new PathItem().delete(operation);
+	}
+
+	private static PathItem securedPatch(String tag, String summary, String description, Schema<?> request) {
+		return new PathItem().patch(securedOperation(tag, summary, description)
+			.requestBody(jsonRequest(request))
+			.responses(ok("MessageResponse", messageResponse("MessageResponse", "수정 성공 여부"))));
 	}
 
 	private static Operation securedOperation(String tag, String summary, String description) {
@@ -224,6 +240,13 @@ public class OpenApiConfig {
 			new IntegerSchema().name("floor").description("층"),
 			new StringSchema().name("classroomNumber").description("강의실 번호"),
 			new BooleanSchema().name("available").description("예약 가능 여부"));
+	}
+
+	private static Schema<?> userInfoResponse() {
+		return object("UserInfoResponse",
+			new StringSchema().name("name").description("이름"),
+			new StringSchema().name("klasId").description("학번"),
+			new StringSchema().name("phoneNumber").description("전화번호"));
 	}
 
 	private static Schema<?> arrayResponse(String name, Schema<?> itemSchema) {
