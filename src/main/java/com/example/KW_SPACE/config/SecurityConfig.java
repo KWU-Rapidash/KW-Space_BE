@@ -12,7 +12,12 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/api/health", "/api/health/").permitAll()
+				.requestMatchers(
+					"/api/health",
+					"/api/health/",
+					"/swagger-ui/**",
+					"/v3/api-docs/**"
+				).permitAll()
 				.anyRequest().authenticated())
 			.build();
 	}
