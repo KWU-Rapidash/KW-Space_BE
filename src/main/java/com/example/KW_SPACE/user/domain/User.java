@@ -2,51 +2,126 @@ package com.example.KW_SPACE.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.UuidGenerator;
-
-import java.util.UUID;
+import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(
+		name = "users",
+		uniqueConstraints = {
+			@UniqueConstraint(name = "uk_users_klas_id", columnNames = "klas_id"),
+			@UniqueConstraint(name = "uk_users_phone_number", columnNames = "phone_number")
+		}
+)
 public class User {
 
-    @Id
-    @GeneratedValue
-    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
-    private UUID id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+	@Column(name = "klas_id", nullable = false, length = 20)
+	private String klasId;
 
-    @Column(nullable = false, unique = true, length = 20)
-    private String klasId;
+	@Column(nullable = false, length = 50)
+	private String name;
 
-    @Column(nullable = false)
-    private String password;
+	@Column(name = "phone_number", length = 20)
+	private String phoneNumber;
 
-    @Column(nullable = false, unique = true, length = 20)
-    private String phoneNumber;
+	@Column(name = "password_hash", nullable = false)
+	private String passwordHash;
 
-    protected User() {
-    }
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private UserRole role = UserRole.USER;
 
-    public User(String name, String klasId, String password, String phoneNumber) {
-        this.name = name;
-        this.klasId = klasId;
-        this.password = password;
-        this.phoneNumber = phoneNumber;
-    }
+	@Column(name = "token_version", nullable = false)
+	private int tokenVersion;
 
-    public UUID getId() { return id; }
-    public String getName() { return name; }
-    public String getKlasId() { return klasId; }
-    public String getPassword() { return password; }
-    public String getPhoneNumber() { return phoneNumber; }
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private LocalDateTime createdAt;
 
-    public void updatePhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
+
+	@Column(name = "last_login_at")
+	private LocalDateTime lastLoginAt;
+
+	protected User() {
+	}
+
+	private User(String klasId, String name, String phoneNumber, String passwordHash) {
+		this.klasId = klasId;
+		this.name = name;
+		this.phoneNumber = phoneNumber;
+		this.passwordHash = passwordHash;
+	}
+
+	public static User create(String klasId, String name, String phoneNumber, String passwordHash) {
+		return new User(klasId, name, phoneNumber, passwordHash);
+	}
+
+	@PrePersist
+	void prePersist() {
+		LocalDateTime now = LocalDateTime.now();
+		this.createdAt = now;
+		this.updatedAt = now;
+	}
+
+	@PreUpdate
+	void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	public void changePhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public String getKlasId() {
+		return klasId;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
+	public UserRole getRole() {
+		return role;
+	}
+
+	public int getTokenVersion() {
+		return tokenVersion;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public LocalDateTime getLastLoginAt() {
+		return lastLoginAt;
+	}
 }

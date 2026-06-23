@@ -1,11 +1,13 @@
 package com.example.KW_SPACE.user.domain;
 
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
-import java.util.UUID;
+public interface UserRepository extends JpaRepository<User, Long> {
 
-public interface UserRepository extends JpaRepository<User, UUID> {
+	Optional<User> findByKlasId(String klasId);
 
-    Optional<User> findByKlasId(String klasId);
+	boolean existsByKlasId(String klasId);
+
+	boolean existsByPhoneNumber(String phoneNumber);
 }
