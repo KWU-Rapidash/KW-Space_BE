@@ -2,7 +2,7 @@ package com.example.KW_SPACE.auth.presentation;
 
 import com.example.KW_SPACE.auth.application.AuthService;
 import com.example.KW_SPACE.auth.application.LoginResult;
-import com.example.KW_SPACE.auth.jwt.JwtProperties;
+import com.example.KW_SPACE.auth.cookie.AuthCookieService;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
@@ -10,7 +10,6 @@ import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,11 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
 	private final AuthService authService;
-	private final JwtProperties jwtProperties;
+	private final AuthCookieService authCookieService;
 
-	public AuthController(AuthService authService, JwtProperties jwtProperties) {
+	public AuthController(AuthService authService, AuthCookieService authCookieService) {
 		this.authService = authService;
-		this.jwtProperties = jwtProperties;
+		this.authCookieService = authCookieService;
 	}
 
 	@PostMapping("/signup")
@@ -41,17 +40,8 @@ public class AuthController {
 		LoginResult loginResult = authService.login(request);
 
 		return ResponseEntity.ok()
-				.header(HttpHeaders.SET_COOKIE, accessTokenCookie(loginResult.accessToken()).toString())
+				.header(HttpHeaders.SET_COOKIE,
+						authCookieService.createAccessTokenCookie(loginResult.accessToken()).toString())
 				.body(loginResult.response());
-	}
-
-	private ResponseCookie accessTokenCookie(String accessToken) {
-		return ResponseCookie.from("accessToken", accessToken)
-				.httpOnly(true)
-				.secure(true)
-				.sameSite("Lax")
-				.path("/")
-				.maxAge(jwtProperties.accessTokenTtl())
-				.build();
 	}
 }
