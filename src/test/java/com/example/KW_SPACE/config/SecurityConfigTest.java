@@ -3,6 +3,7 @@ package com.example.KW_SPACE.config;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -55,6 +57,29 @@ class SecurityConfigTest {
 	void apiPreflightEndpointIsPublic() throws Exception {
 		mockMvc.perform(options("/api/v1/user"))
 				.andExpect(status().isOk());
+	}
+
+	@Test
+	void jsonLoginWithoutCsrfTokenReachesAuthController() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "password": "service-password"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
+	}
+
+	@Test
+	void protectedPostWithoutCsrfTokenStillRequiresJwtAuthentication() throws Exception {
+		mockMvc.perform(post("/api/v1/user"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
 	}
 
 	@Test

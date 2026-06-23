@@ -27,6 +27,7 @@ public class SecurityConfig {
 		return http
 				.formLogin(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
+				.csrf(AbstractHttpConfigurer::disable)
 				.logout(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(exception -> exception
