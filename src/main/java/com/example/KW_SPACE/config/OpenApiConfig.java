@@ -60,29 +60,29 @@ public class OpenApiConfig {
 				.addPathItem("/api/v1/auth/login", post("Auth", "로그인", "학번과 비밀번호로 로그인하고 JWT Cookie를 발급한다.",
 					object("LoginRequest", field("klasId", "학번"), field("password", "비밀번호")),
 					messageResponse("LoginResponse", "로그인 성공 여부와 JWT Cookie 발급 결과")))
-				.addPathItem("/api/v1/auth/signup", post("Auth", "회원가입", "KLAS 재학생 인증 후 서비스 계정을 생성한다.",
+				.addPathItem("/api/v1/auth/signup", postWithResponses("Auth", "회원가입", "KLAS 재학생 인증 후 서비스 계정을 생성한다.",
 					object("SignupRequest",
 						field("klasId", "학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
 						field("password", "서비스 로그인 비밀번호"),
 						field("phoneNumber", "전화번호")),
-					messageResponse("SignupResponse", "회원가입 성공 여부")))
-				.addPathItem("/api/v1/auth/password-reset", post("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
+					signupResponses()))
+				.addPathItem("/api/v1/auth/password-reset", postWithResponses("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
 					object("PasswordResetRequest",
 						field("klasId", "학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
 						field("newPassword", "새 서비스 비밀번호")),
-					messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부")))
-				.addPathItem("/api/v1/reservations", securedPost("Reserve", "강의실 예약", "선택한 날짜, 강의실, 시간대로 예약을 생성한다.",
+					passwordResetResponses()))
+				.addPathItem("/api/v1/reservations", securedPostWithResponses("Reserve", "강의실 예약", "선택한 날짜, 강의실, 시간대로 예약을 생성한다.",
 					object("ReservationCreateRequest",
-						field("classroomId", "강의실 식별자"),
+						classroomIdSchema().name("classroomId"),
 						field("date", "예약 날짜"),
 						field("startTime", "예약 시작 시간"),
 						field("endTime", "예약 종료 시간")),
-					reservationResponse()))
+					reservationCreateResponses()))
 				.addPathItem("/api/v1/classrooms/{classroomId}/times", securedGet("Reserve", "강의실 예약 가능 시간 조회",
 					"특정 강의실의 날짜별 시간대 예약 가능 여부를 조회한다.",
-					List.of(pathParameter("classroomId", "강의실 식별자"), queryParameter("date", "조회 날짜")),
+					List.of(classroomIdPathParameter(), queryParameter("date", "조회 날짜")),
 					arrayResponse("ClassroomTimeAvailabilityList", classroomTimeAvailability())))
 				.addPathItem("/api/v1/classrooms", securedGet("Reserve", "특정 날짜/층의 전체 강의실 조회",
 					"특정 날짜와 층의 예약 가능/불가 강의실 목록을 조회한다.",
@@ -97,13 +97,14 @@ public class OpenApiConfig {
 					List.of(pathParameter("reservationId", "예약 식별자"))))
 				.addPathItem("/api/v1/user", new PathItem()
 					.get(securedOperation("User", "내 정보 조회", "내 학번, 이름, 전화번호를 조회한다.")
-						.responses(ok("UserInfoResponse", userInfoResponse())))
+						.responses(userInfoResponses()))
 					.delete(securedOperation("User", "회원 탈퇴", "내 계정을 탈퇴 처리한다.")
 						.responses(noContent())))
 				.addPathItem("/api/v1/user/password", securedPatch("User", "내 비밀번호 수정", "기존 비밀번호 확인 후 새 비밀번호로 수정한다.",
 					object("PasswordUpdateRequest", field("currentPassword", "기존 비밀번호"), field("newPassword", "새 비밀번호"))))
-				.addPathItem("/api/v1/user/phone", securedPatch("User", "내 전화번호 수정", "내 전화번호를 새 전화번호로 수정한다.",
-					object("PhoneUpdateRequest", field("phoneNumber", "새 전화번호")))));
+				.addPathItem("/api/v1/user/phone", securedPatchWithResponses("User", "내 전화번호 수정", "내 전화번호를 새 전화번호로 수정한다.",
+					object("PhoneUpdateRequest", field("phoneNumber", "새 전화번호")),
+					phoneUpdateResponses())));
 	}
 
 	private static PathItem post(String tag, String summary, String description, Schema<?> request, Schema<?> response) {
@@ -115,10 +116,21 @@ public class OpenApiConfig {
 			.responses(ok(response.getName(), response)));
 	}
 
-	private static PathItem securedPost(String tag, String summary, String description, Schema<?> request, Schema<?> response) {
+	private static PathItem postWithResponses(String tag, String summary, String description, Schema<?> request,
+		ApiResponses responses) {
+		return new PathItem().post(new Operation()
+			.addTagsItem(tag)
+			.summary(summary)
+			.description(description)
+			.requestBody(jsonRequest(request))
+			.responses(responses));
+	}
+
+	private static PathItem securedPostWithResponses(String tag, String summary, String description, Schema<?> request,
+		ApiResponses responses) {
 		return new PathItem().post(securedOperation(tag, summary, description)
 			.requestBody(jsonRequest(request))
-			.responses(ok(response.getName(), response)));
+			.responses(responses));
 	}
 
 	private static PathItem securedGet(String tag, String summary, String description, List<Parameter> parameters,
@@ -140,6 +152,13 @@ public class OpenApiConfig {
 		return new PathItem().patch(securedOperation(tag, summary, description)
 			.requestBody(jsonRequest(request))
 			.responses(ok("MessageResponse", messageResponse("MessageResponse", "수정 성공 여부"))));
+	}
+
+	private static PathItem securedPatchWithResponses(String tag, String summary, String description, Schema<?> request,
+		ApiResponses responses) {
+		return new PathItem().patch(securedOperation(tag, summary, description)
+			.requestBody(jsonRequest(request))
+			.responses(responses));
 	}
 
 	private static Operation securedOperation(String tag, String summary, String description) {
@@ -172,6 +191,40 @@ public class OpenApiConfig {
 			.addApiResponse("404", new ApiResponse().description("대상을 찾을 수 없음"));
 	}
 
+	private static ApiResponses signupResponses() {
+		return new ApiResponses()
+			.addApiResponse("201", new ApiResponse()
+				.description("Created")
+				.content(jsonContent(messageResponse("SignupResponse", "회원가입 성공 여부"))))
+			.addApiResponse("400", new ApiResponse().description("필수 입력값 누락"))
+			.addApiResponse("401", new ApiResponse().description("KLAS 인증 실패"))
+			.addApiResponse("409", new ApiResponse().description("이미 가입된 사용자"))
+			.addApiResponse("422", new ApiResponse().description("입력값 형식 오류"));
+	}
+
+	private static ApiResponses passwordResetResponses() {
+		return ok("PasswordResetResponse", messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부"))
+			.addApiResponse("404", new ApiResponse().description("사용자를 찾을 수 없음"));
+	}
+
+	private static ApiResponses reservationCreateResponses() {
+		return ok("ReservationResponse", reservationResponse())
+			.addApiResponse("409", new ApiResponse().description("이미 예약된 시간대"));
+	}
+
+	private static ApiResponses userInfoResponses() {
+		return new ApiResponses()
+			.addApiResponse("200", new ApiResponse()
+				.description("OK")
+				.content(jsonContent(userInfoResponse())))
+			.addApiResponse("401", new ApiResponse().description("인증 필요"))
+			.addApiResponse("404", new ApiResponse().description("사용자를 찾을 수 없음"));
+	}
+
+	private static ApiResponses phoneUpdateResponses() {
+		return ok("PhoneUpdateResponse", phoneUpdateResponse());
+	}
+
 	private static Content jsonContent(Schema<?> schema) {
 		return new Content().addMediaType("application/json", new MediaType().schema(schema));
 	}
@@ -191,6 +244,15 @@ public class OpenApiConfig {
 
 	private static Parameter pathParameter(String name, String description) {
 		return new Parameter().in("path").required(true).name(name).description(description).schema(new StringSchema());
+	}
+
+	private static Parameter classroomIdPathParameter() {
+		return new Parameter()
+			.in("path")
+			.required(true)
+			.name("classroomId")
+			.description("강의실 식별자. 현재는 saebit-{호실} 형식이며, 추후 {건물명}-{호실} 형식으로 확장한다.")
+			.schema(classroomIdSchema());
 	}
 
 	private static Parameter queryParameter(String name, String description) {
@@ -226,7 +288,7 @@ public class OpenApiConfig {
 		return object("UserReservationResponse",
 			new StringSchema().name("reservationId").description("예약 식별자"),
 			new StringSchema().name("date").description("예약 날짜"),
-			new StringSchema().name("classroomNumber").description("강의실 번호"),
+			new StringSchema().name("classroom").description("강의실 표시명"),
 			new StringSchema().name("reserverName").description("예약자 정보"),
 			new StringSchema().name("startTime").description("예약 시작 시간"),
 			new StringSchema().name("endTime").description("예약 종료 시간"),
@@ -248,10 +310,16 @@ public class OpenApiConfig {
 
 	private static Schema<?> classroomAvailability() {
 		return object("ClassroomAvailabilityResponse",
-			new StringSchema().name("classroomId").description("강의실 식별자"),
+			classroomIdSchema().name("classroomId"),
 			new IntegerSchema().name("floor").description("층"),
 			new StringSchema().name("classroomNumber").description("강의실 번호"),
 			new BooleanSchema().name("available").description("예약 가능 여부"));
+	}
+
+	private static StringSchema classroomIdSchema() {
+		return (StringSchema)new StringSchema()
+			.description("강의실 식별자. 현재는 saebit-{호실} 형식이며, 추후 {건물명}-{호실} 형식으로 확장한다.")
+			.example("saebit-101");
 	}
 
 	private static Schema<?> userInfoResponse() {
@@ -259,6 +327,12 @@ public class OpenApiConfig {
 			new StringSchema().name("name").description("이름"),
 			new StringSchema().name("klasId").description("학번"),
 			new StringSchema().name("phoneNumber").description("전화번호"));
+	}
+
+	private static Schema<?> phoneUpdateResponse() {
+		return object("PhoneUpdateResponse",
+			new StringSchema().name("phoneNumber").description("수정된 전화번호"),
+			new StringSchema().name("message").description("전화번호 수정 결과 메시지"));
 	}
 
 	private static Schema<?> arrayResponse(String name, Schema<?> itemSchema) {
