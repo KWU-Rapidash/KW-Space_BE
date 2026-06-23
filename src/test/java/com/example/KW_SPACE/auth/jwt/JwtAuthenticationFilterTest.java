@@ -54,7 +54,7 @@ class JwtAuthenticationFilterTest {
 
 	@Test
 	void skipsPublicEndpointEvenWhenAccessTokenCookieExists() throws Exception {
-		MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/api/v1/auth/login");
+		MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/api/v1/user");
 		request.setCookies(new Cookie("accessToken", "invalid-token"));
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		FilterChain filterChain = mock(FilterChain.class);

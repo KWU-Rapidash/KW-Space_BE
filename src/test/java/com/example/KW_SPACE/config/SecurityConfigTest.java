@@ -52,8 +52,8 @@ class SecurityConfigTest {
 	}
 
 	@Test
-	void authPreflightEndpointIsPublic() throws Exception {
-		mockMvc.perform(options("/api/v1/auth/login"))
+	void apiPreflightEndpointIsPublic() throws Exception {
+		mockMvc.perform(options("/api/v1/user"))
 				.andExpect(status().isOk());
 	}
 

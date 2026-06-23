@@ -30,14 +30,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			"/api/v1/auth/password-reset",
 			"/api/v1/auth/logout"
 	);
-	private static final Set<String> PUBLIC_OPTIONS_PATHS = Set.of(
-			"/api/health",
-			"/api/health/",
-			"/api/v1/auth/signup",
-			"/api/v1/auth/login",
-			"/api/v1/auth/password-reset",
-			"/api/v1/auth/logout"
-	);
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final CustomUserDetailsService customUserDetailsService;
@@ -56,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		return isPublicRequest(request, "GET", PUBLIC_GET_PATHS)
 				|| isPublicRequest(request, "HEAD", PUBLIC_HEAD_PATHS)
 				|| isPublicRequest(request, "POST", PUBLIC_POST_PATHS)
-				|| isPublicRequest(request, "OPTIONS", PUBLIC_OPTIONS_PATHS);
+				|| isApiOptionsRequest(request);
 	}
 
 	@Override
@@ -119,6 +111,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private boolean isPublicRequest(HttpServletRequest request, String method, Set<String> paths) {
 		return method.equals(request.getMethod()) && paths.contains(resolveRequestPath(request));
+	}
+
+	private boolean isApiOptionsRequest(HttpServletRequest request) {
+		String requestPath = resolveRequestPath(request);
+
+		return "OPTIONS".equals(request.getMethod()) && requestPath.startsWith("/api/");
 	}
 
 	private String resolveRequestPath(HttpServletRequest request) {
