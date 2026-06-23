@@ -6,7 +6,6 @@ import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.klas.KlasAuthServerUnavailableException;
 import com.example.KW_SPACE.user.application.UserNotFoundException;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -68,11 +67,7 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(UserNotFoundException.class)
-	public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException exception) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(new ErrorResponse(exception.getMessage()));
-	}
-
-	public record ErrorResponse(String message) {
+	public ResponseEntity<AuthErrorResponse> handleUserNotFound() {
+		return toResponse(AuthErrorCode.AUTH_INVALID_CREDENTIALS);
 	}
 }
