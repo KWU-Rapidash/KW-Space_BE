@@ -28,7 +28,11 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.info.version").value("0.0.1-SNAPSHOT"))
 			.andExpect(jsonPath("$.components.securitySchemes.accessTokenCookie.in").value("cookie"))
 			.andExpect(jsonPath("$.components.securitySchemes.accessTokenCookie.name").value("accessToken"))
-			.andExpect(jsonPath("$.paths['/api/health'].get.summary").value("헬스체크"));
+			.andExpect(jsonPath("$.paths['/api/health'].get.summary").value("헬스체크"))
+			.andExpect(jsonPath("$.paths['/api/auth/login'].post.summary").value("로그인"))
+			.andExpect(jsonPath("$.paths['/api/auth/signup'].post.summary").value("회원가입"))
+			.andExpect(jsonPath("$.paths['/api/auth/password-reset'].post.summary").value("비밀번호 재설정"))
+			.andExpect(jsonPath("$.paths['/api/auth/login'].post.security").doesNotExist());
 	}
 
 	@Test
