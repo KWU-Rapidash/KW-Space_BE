@@ -14,7 +14,13 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/api/health", "/api/health/", "/api/v1/user", "/api/v1/user/").permitAll()
+				.requestMatchers(
+						"/api/health",
+						"/api/health/",
+						"/api/v1/auth/signup",
+						"/api/v1/user",
+						"/api/v1/user/"
+				).permitAll()
 				.anyRequest().authenticated())
 			.build();
 	}
