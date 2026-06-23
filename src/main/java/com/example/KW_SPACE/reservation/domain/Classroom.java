@@ -38,6 +38,9 @@ public class Classroom {
 	}
 
 	public static Classroom create(int floor, String roomNumber) {
+		if (roomNumber == null || roomNumber.isBlank() || roomNumber.length() > 20) {
+			throw new IllegalArgumentException("강의실 호수는 1자 이상 20자 이하여야 합니다.");
+		}
 		return new Classroom(floor, roomNumber);
 	}
 }

@@ -39,6 +39,23 @@ class ReservationTest {
 	}
 
 	@Test
+	void rejectsNullRequiredArguments() {
+		LocalTime startTime = LocalTime.of(10, 0);
+		LocalTime endTime = LocalTime.of(11, 0);
+
+		assertThatThrownBy(() -> Reservation.create(null, user, DATE, startTime, endTime))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> Reservation.create(classroom, null, DATE, startTime, endTime))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> Reservation.create(classroom, user, null, startTime, endTime))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> Reservation.create(classroom, user, DATE, null, endTime))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> Reservation.create(classroom, user, DATE, startTime, null))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
 	void cancelChangesStatusToCanceled() {
 		Reservation reservation = Reservation.create(classroom, user, DATE, LocalTime.of(10, 0), LocalTime.of(11, 0));
 
