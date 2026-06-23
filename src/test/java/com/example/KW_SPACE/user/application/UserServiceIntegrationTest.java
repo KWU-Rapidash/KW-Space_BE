@@ -24,7 +24,7 @@ class UserServiceIntegrationTest {
 	}
 
 	@Test
-	void 여러_사용자_중_요청한_klasId의_내_정보만_조회한다() {
+	void getMyInfoReturnsOnlyUserMatchingRequestedKlasId() {
 		userRepository.save(User.create("2022202014", "김철수", "010-1111-2222", "encoded-password-1"));
 		userRepository.save(User.create("2022202015", "홍길동", "010-1234-5678", "encoded-password-2"));
 		userRepository.saveAndFlush(User.create("2022202016", "이영희", "010-3333-4444", "encoded-password-3"));

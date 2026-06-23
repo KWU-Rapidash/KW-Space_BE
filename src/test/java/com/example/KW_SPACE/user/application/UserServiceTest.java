@@ -17,7 +17,7 @@ class UserServiceTest {
 	private final UserService userService = new UserService(userRepository);
 
 	@Test
-	void 학번으로_내_정보를_조회한다() {
+	void getMyInfoReturnsUserInfoByKlasId() {
 		User user = User.create("2022202015", "홍길동", "010-1234-5678", "encoded-password");
 		given(userRepository.findByKlasId("2022202015")).willReturn(Optional.of(user));
 
@@ -29,7 +29,7 @@ class UserServiceTest {
 	}
 
 	@Test
-	void 없는_학번이면_예외를_던진다() {
+	void getMyInfoThrowsExceptionWhenKlasIdDoesNotExist() {
 		given(userRepository.findByKlasId("2022202015")).willReturn(Optional.empty());
 
 		assertThatThrownBy(() -> userService.getMyInfo("2022202015"))

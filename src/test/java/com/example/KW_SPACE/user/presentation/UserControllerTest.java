@@ -28,7 +28,7 @@ class UserControllerTest {
 	private UserService userService;
 
 	@Test
-	void 내_정보를_조회한다() throws Exception {
+	void getMyInfoReturnsUserInfo() throws Exception {
 		given(userService.getMyInfo("2022202015"))
 				.willReturn(new UserInfoResponse("홍길동", "2022202015", "010-****-5678", "내 정보 조회에 성공했습니다."));
 
@@ -43,7 +43,7 @@ class UserControllerTest {
 	}
 
 	@Test
-	void 없는_사용자면_404를_반환한다() throws Exception {
+	void getMyInfoReturnsNotFoundWhenUserDoesNotExist() throws Exception {
 		given(userService.getMyInfo("2022202015"))
 				.willThrow(new UserNotFoundException("2022202015"));
 
