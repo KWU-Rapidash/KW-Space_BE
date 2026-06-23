@@ -18,6 +18,7 @@ public class SecurityConfig {
 						"/api/health",
 						"/api/health/",
 						"/api/v1/auth/signup",
+						"/api/v1/auth/login",
 						"/api/v1/user",
 						"/api/v1/user/"
 				).permitAll()
