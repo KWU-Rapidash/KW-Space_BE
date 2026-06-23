@@ -36,6 +36,16 @@ public class SecurityConfig {
 								authErrorResponseWriter.write(response, AuthErrorCode.AUTH_FORBIDDEN)))
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.GET, "/api/health", "/api/health/").permitAll()
+						.requestMatchers(HttpMethod.HEAD, "/api/health", "/api/health/").permitAll()
+						.requestMatchers(
+								HttpMethod.OPTIONS,
+								"/api/health",
+								"/api/health/",
+								"/api/v1/auth/signup",
+								"/api/v1/auth/login",
+								"/api/v1/auth/password-reset",
+								"/api/v1/auth/logout"
+						).permitAll()
 						.requestMatchers(
 								HttpMethod.POST,
 								"/api/v1/auth/signup",

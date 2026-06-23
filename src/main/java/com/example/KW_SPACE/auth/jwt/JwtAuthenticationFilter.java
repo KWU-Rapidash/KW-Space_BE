@@ -23,7 +23,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
 	private static final Set<String> PUBLIC_GET_PATHS = Set.of("/api/health", "/api/health/");
+	private static final Set<String> PUBLIC_HEAD_PATHS = Set.of("/api/health", "/api/health/");
 	private static final Set<String> PUBLIC_POST_PATHS = Set.of(
+			"/api/v1/auth/signup",
+			"/api/v1/auth/login",
+			"/api/v1/auth/password-reset",
+			"/api/v1/auth/logout"
+	);
+	private static final Set<String> PUBLIC_OPTIONS_PATHS = Set.of(
+			"/api/health",
+			"/api/health/",
 			"/api/v1/auth/signup",
 			"/api/v1/auth/login",
 			"/api/v1/auth/password-reset",
@@ -45,7 +54,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		return isPublicRequest(request, "GET", PUBLIC_GET_PATHS)
-				|| isPublicRequest(request, "POST", PUBLIC_POST_PATHS);
+				|| isPublicRequest(request, "HEAD", PUBLIC_HEAD_PATHS)
+				|| isPublicRequest(request, "POST", PUBLIC_POST_PATHS)
+				|| isPublicRequest(request, "OPTIONS", PUBLIC_OPTIONS_PATHS);
 	}
 
 	@Override

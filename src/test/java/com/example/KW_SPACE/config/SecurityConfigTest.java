@@ -1,6 +1,8 @@
 package com.example.KW_SPACE.config;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -41,6 +43,18 @@ class SecurityConfigTest {
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.status").value("ok"));
+	}
+
+	@Test
+	void healthHeadEndpointIsPublic() throws Exception {
+		mockMvc.perform(head("/api/health"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void authPreflightEndpointIsPublic() throws Exception {
+		mockMvc.perform(options("/api/v1/auth/login"))
+				.andExpect(status().isOk());
 	}
 
 	@Test
