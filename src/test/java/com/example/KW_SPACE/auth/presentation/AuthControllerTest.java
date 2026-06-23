@@ -2,6 +2,7 @@ package com.example.KW_SPACE.auth.presentation;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -23,6 +24,7 @@ import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import com.example.KW_SPACE.auth.security.CustomUserDetailsService;
 import com.example.KW_SPACE.config.AuthCookieConfig;
 import com.example.KW_SPACE.config.SecurityConfig;
+import jakarta.servlet.http.Cookie;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -208,5 +210,34 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void logoutDeletesAccessTokenCookie() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/logout"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("로그아웃에 성공했습니다."))
+				.andExpect(header().string("Set-Cookie", Matchers.allOf(
+						Matchers.containsString("accessToken="),
+						Matchers.containsString("HttpOnly"),
+						Matchers.not(Matchers.containsString("Secure")),
+						Matchers.containsString("SameSite=Lax"),
+						Matchers.containsString("Path=/"),
+						Matchers.containsString("Max-Age=0")
+				)));
+
+		verifyNoInteractions(authService);
+	}
+
+	@Test
+	void logoutIgnoresInvalidAccessTokenCookie() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/logout")
+						.cookie(new Cookie("accessToken", "invalid-token")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(header().string("Set-Cookie", Matchers.containsString("Max-Age=0")));
+
+		verifyNoInteractions(authService, jwtTokenProvider, customUserDetailsService);
 	}
 }

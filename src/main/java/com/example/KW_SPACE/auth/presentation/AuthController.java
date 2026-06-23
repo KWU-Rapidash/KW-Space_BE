@@ -5,6 +5,7 @@ import com.example.KW_SPACE.auth.application.LoginResult;
 import com.example.KW_SPACE.auth.cookie.AuthCookieService;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
+import com.example.KW_SPACE.auth.presentation.dto.LogoutResponse;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import jakarta.validation.Valid;
@@ -43,5 +44,12 @@ public class AuthController {
 				.header(HttpHeaders.SET_COOKIE,
 						authCookieService.createAccessTokenCookie(loginResult.accessToken()).toString())
 				.body(loginResult.response());
+	}
+
+	@PostMapping("/logout")
+	public ResponseEntity<LogoutResponse> logout() {
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, authCookieService.deleteAccessTokenCookie().toString())
+				.body(new LogoutResponse(true, "로그아웃에 성공했습니다."));
 	}
 }
