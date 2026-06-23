@@ -10,9 +10,11 @@ class JwtPropertiesTest {
 
 	@Test
 	void createsJwtProperties() {
-		JwtProperties properties = new JwtProperties("secret-value", Duration.ofHours(1));
+		String secret = "0123456789abcdef0123456789abcdef";
 
-		assertThat(properties.secret()).isEqualTo("secret-value");
+		JwtProperties properties = new JwtProperties(secret, Duration.ofHours(1));
+
+		assertThat(properties.secret()).isEqualTo(secret);
 		assertThat(properties.accessTokenTtl()).isEqualTo(Duration.ofHours(1));
 	}
 
@@ -24,8 +26,15 @@ class JwtPropertiesTest {
 	}
 
 	@Test
+	void rejectsShortSecret() {
+		assertThatThrownBy(() -> new JwtProperties("short-secret", Duration.ofHours(1)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("JWT secret must be at least 32 bytes");
+	}
+
+	@Test
 	void rejectsNonPositiveTtl() {
-		assertThatThrownBy(() -> new JwtProperties("secret-value", Duration.ZERO))
+		assertThatThrownBy(() -> new JwtProperties("0123456789abcdef0123456789abcdef", Duration.ZERO))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("JWT access token ttl must be positive");
 	}
