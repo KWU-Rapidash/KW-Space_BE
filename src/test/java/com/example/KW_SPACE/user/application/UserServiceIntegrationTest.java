@@ -31,7 +31,7 @@ class UserServiceIntegrationTest {
 
 		UserInfoResponse response = userService.getMyInfo("2022202015");
 
-		assertThat(response.username()).isEqualTo("홍길동");
+		assertThat(response.name()).isEqualTo("홍길동");
 		assertThat(response.klasId()).isEqualTo("2022202015");
 		assertThat(response.phoneNumber()).isEqualTo("010-****-5678");
 	}
