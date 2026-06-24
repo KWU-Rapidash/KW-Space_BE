@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
 	private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+	private static final List<String> SWAGGER_PUBLIC_PATHS = List.of("/swagger-ui/**", "/v3/api-docs/**");
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final CustomUserDetailsService customUserDetailsService;
@@ -46,7 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		return isPublicRequest(request, "GET", PUBLIC_GET_PATHS)
 				|| isPublicRequest(request, "HEAD", PUBLIC_HEAD_PATHS)
 				|| isPublicRequest(request, "POST", PUBLIC_POST_PATHS)
-				|| isApiOptionsRequest(request);
+				|| isApiOptionsRequest(request)
+				|| isPublicPath(request, SWAGGER_PUBLIC_PATHS);
 	}
 
 	@Override
@@ -118,6 +120,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		String requestPath = resolveRequestPath(request);
 
 		return "OPTIONS".equals(request.getMethod()) && requestPath.startsWith("/api/");
+	}
+
+	private boolean isPublicPath(HttpServletRequest request, List<String> pathPatterns) {
+		String requestPath = resolveRequestPath(request);
+
+		return pathPatterns.stream().anyMatch(pattern -> PATH_MATCHER.match(pattern, requestPath));
 	}
 
 	private String resolveRequestPath(HttpServletRequest request) {
