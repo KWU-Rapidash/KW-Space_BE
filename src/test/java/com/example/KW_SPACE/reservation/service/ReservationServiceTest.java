@@ -13,6 +13,7 @@ import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.classroom.domain.ClassroomRepository;
 import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
+import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateRequest;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateResponse;
 import com.example.KW_SPACE.reservation.exception.ReservationErrorCode;
@@ -41,6 +42,7 @@ class ReservationServiceTest {
 	private static final LocalTime SLOT_END = LocalTime.of(10, 30);
 	private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 	private static final long USER_ID = 1L;
+	private static final long RESERVATION_ID = 100L;
 	private static final String CLASSROOM_CODE = "saebit-101";
 
 	@Mock
@@ -156,5 +158,57 @@ class ReservationServiceTest {
 				.extracting("errorCode").isEqualTo(ReservationErrorCode.RESERVATION_CONFLICT);
 
 		verify(reservationRepository, never()).save(any());
+	}
+
+	private Reservation reservationOf(long ownerId, ReservationStatus status) {
+		User owner = User.create("2025404000", "이효원", null, "encoded-password");
+		ReflectionTestUtils.setField(owner, "id", ownerId);
+		Reservation reservation = Reservation.create(classroom(), owner, DATE, SLOT_START, SLOT_END);
+		ReflectionTestUtils.setField(reservation, "id", RESERVATION_ID);
+		if (status == ReservationStatus.CANCELED) {
+			reservation.cancel();
+		}
+		return reservation;
+	}
+
+	@Test
+	void cancelsOwnReservation() {
+		Reservation reservation = reservationOf(USER_ID, ReservationStatus.RESERVED);
+		when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservation));
+
+		reservationService.cancel(USER_ID, RESERVATION_ID);
+
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
+	}
+
+	@Test
+	void rejectsCancelWhenReservationNotFound() {
+		when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> reservationService.cancel(USER_ID, RESERVATION_ID))
+				.isInstanceOf(ReservationException.class)
+				.extracting("errorCode").isEqualTo(ReservationErrorCode.RESERVATION_NOT_FOUND);
+	}
+
+	@Test
+	void rejectsCancelWhenNotOwner() {
+		Reservation reservation = reservationOf(2L, ReservationStatus.RESERVED);
+		when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservation));
+
+		assertThatThrownBy(() -> reservationService.cancel(USER_ID, RESERVATION_ID))
+				.isInstanceOf(ReservationException.class)
+				.extracting("errorCode").isEqualTo(ReservationErrorCode.RESERVATION_NOT_FOUND);
+
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RESERVED);
+	}
+
+	@Test
+	void rejectsCancelWhenAlreadyCanceled() {
+		Reservation reservation = reservationOf(USER_ID, ReservationStatus.CANCELED);
+		when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservation));
+
+		assertThatThrownBy(() -> reservationService.cancel(USER_ID, RESERVATION_ID))
+				.isInstanceOf(ReservationException.class)
+				.extracting("errorCode").isEqualTo(ReservationErrorCode.ALREADY_CANCELED);
 	}
 }

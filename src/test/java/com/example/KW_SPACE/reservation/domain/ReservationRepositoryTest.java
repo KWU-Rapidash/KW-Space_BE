@@ -138,4 +138,17 @@ class ReservationRepositoryTest {
 		assertThat(reservationRepository.findByClassroomIdAndDateAndStatus(
 				classroom.getId(), DATE, ReservationStatus.RESERVED)).hasSize(1);
 	}
+
+	@Test
+	void allowsRebookingAfterCancellation() {
+		Reservation reservation = reservationRepository.saveAndFlush(
+				Reservation.create(classroom, user, DATE, LocalTime.of(10, 0), LocalTime.of(11, 0)));
+		assertThat(overlaps(LocalTime.of(10, 0), LocalTime.of(11, 0))).isTrue();
+
+		reservation.cancel();
+		reservationRepository.saveAndFlush(reservation);
+
+		// 취소(소프트 삭제) 후 동일 시간대가 다시 예약 가능해야 한다.
+		assertThat(overlaps(LocalTime.of(10, 0), LocalTime.of(11, 0))).isFalse();
+	}
 }

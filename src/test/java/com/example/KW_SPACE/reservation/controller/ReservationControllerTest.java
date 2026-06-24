@@ -2,8 +2,11 @@ package com.example.KW_SPACE.reservation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,6 +114,40 @@ class ReservationControllerTest {
 		mockMvc.perform(post("/api/v1/reservations")
 						.contentType("application/json")
 						.content(requestBody("saebit-101", "2024-04-01", "09:00", "10:30")))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void cancelsReservationAndReturnsNoContent() throws Exception {
+		doNothing().when(reservationService).cancel(USER_ID, 100L);
+
+		mockMvc.perform(delete("/api/v1/reservations/100").with(user(principal)))
+				.andExpect(status().isNoContent());
+	}
+
+	@Test
+	void returnsNotFoundWhenReservationMissingOrNotOwned() throws Exception {
+		doThrow(new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND))
+				.when(reservationService).cancel(USER_ID, 100L);
+
+		mockMvc.perform(delete("/api/v1/reservations/100").with(user(principal)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("RESERVATION_NOT_FOUND"));
+	}
+
+	@Test
+	void returnsConflictWhenAlreadyCanceled() throws Exception {
+		doThrow(new ReservationException(ReservationErrorCode.ALREADY_CANCELED))
+				.when(reservationService).cancel(USER_ID, 100L);
+
+		mockMvc.perform(delete("/api/v1/reservations/100").with(user(principal)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("ALREADY_CANCELED"));
+	}
+
+	@Test
+	void returnsUnauthorizedWhenCancelingWithoutAuthentication() throws Exception {
+		mockMvc.perform(delete("/api/v1/reservations/100"))
 				.andExpect(status().isUnauthorized());
 	}
 }

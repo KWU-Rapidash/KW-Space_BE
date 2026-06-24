@@ -4,6 +4,7 @@ import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.classroom.domain.ClassroomRepository;
 import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
+import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.domain.TimeSlot;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateRequest;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateResponse;
@@ -45,6 +46,21 @@ public class ReservationService {
 				Reservation.create(classroom, user, request.date(), request.startTime(), request.endTime()));
 
 		return ReservationCreateResponse.of(reservation);
+	}
+
+	public void cancel(Long userId, Long reservationId) {
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+		// 남의 예약은 존재 여부를 노출하지 않도록 NOT_FOUND로 통일한다.
+		if (!reservation.getUser().getId().equals(userId)) {
+			throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND);
+		}
+		if (reservation.getStatus() == ReservationStatus.CANCELED) {
+			throw new ReservationException(ReservationErrorCode.ALREADY_CANCELED);
+		}
+
+		reservation.cancel();
 	}
 
 	private void validateSlot(ReservationCreateRequest request) {
