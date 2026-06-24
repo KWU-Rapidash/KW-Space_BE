@@ -2,6 +2,7 @@ package com.example.KW_SPACE.reservation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,7 +45,8 @@ class ClassroomAvailabilityControllerTest {
 
 	@Test
 	void returnsClassroomAvailabilityAsJson() throws Exception {
-		when(classroomAvailabilityService.findAvailability(eq(2), any(LocalDate.class))).thenReturn(List.of(
+		LocalDate date = LocalDate.parse("2024-04-01");
+		when(classroomAvailabilityService.findAvailability(eq(2), eq(date))).thenReturn(List.of(
 				new ClassroomAvailabilityResponse("saebit-201", 2, "201", true, List.of(
 						new TimeSlotResponse("09:00~10:30", true),
 						new TimeSlotResponse("10:30~12:00", false)))));
@@ -58,6 +60,8 @@ class ClassroomAvailabilityControllerTest {
 				.andExpect(jsonPath("$[0].times[0].time").value("09:00~10:30"))
 				.andExpect(jsonPath("$[0].times[0].available").value(true))
 				.andExpect(jsonPath("$[0].times[1].available").value(false));
+
+		verify(classroomAvailabilityService).findAvailability(2, date);
 	}
 
 	@Test
