@@ -1,6 +1,7 @@
 package com.example.KW_SPACE.reservation.domain;
 
 import java.time.LocalTime;
+import java.util.Arrays;
 import lombok.Getter;
 
 /**
@@ -31,5 +32,11 @@ public enum TimeSlot {
 
 	public boolean overlaps(LocalTime start, LocalTime end) {
 		return start.isBefore(this.endTime) && end.isAfter(this.startTime);
+	}
+
+	/** start~end 가 정의된 슬롯 하나의 경계와 정확히 일치하면 true. */
+	public static boolean isValidSlot(LocalTime start, LocalTime end) {
+		return Arrays.stream(values())
+				.anyMatch(slot -> slot.startTime.equals(start) && slot.endTime.equals(end));
 	}
 }
