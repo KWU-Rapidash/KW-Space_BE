@@ -68,14 +68,21 @@ public class JwtTokenProvider {
 
 	private Claims parseClaims(String token) {
 		try {
-			return Jwts.parser()
+			Claims claims = Jwts.parser()
 					.verifyWith(secretKey)
 					.clock(() -> Date.from(clock.instant()))
 					.build()
 					.parseSignedClaims(token)
 					.getPayload();
+			if (claims.getExpiration() == null) {
+				throw new AuthException(AuthErrorCode.AUTH_INVALID_TOKEN);
+			}
+
+			return claims;
 		} catch (ExpiredJwtException exception) {
 			throw new AuthException(AuthErrorCode.AUTH_EXPIRED_TOKEN);
+		} catch (AuthException exception) {
+			throw exception;
 		} catch (IllegalArgumentException | JwtException exception) {
 			throw new AuthException(AuthErrorCode.AUTH_INVALID_TOKEN);
 		}

@@ -95,6 +95,22 @@ class JwtTokenProviderTest {
 						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
 	}
 
+	@Test
+	void rejectsTokenWithoutExpiration() {
+		SecretKey secretKey = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+		String token = Jwts.builder()
+				.subject("1")
+				.claim("role", UserRole.USER.name())
+				.claim("tokenVersion", 0)
+				.issuedAt(Date.from(NOW))
+				.signWith(secretKey)
+				.compact();
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
 	private void setUserId(User user, Long id) {
 		try {
 			var field = User.class.getDeclaredField("id");
