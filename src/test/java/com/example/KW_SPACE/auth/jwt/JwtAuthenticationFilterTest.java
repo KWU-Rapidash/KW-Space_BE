@@ -67,6 +67,34 @@ class JwtAuthenticationFilterTest {
 	}
 
 	@Test
+	void skipsPublicClassroomListEndpointEvenWhenAccessTokenCookieExists() throws Exception {
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/classrooms");
+		request.setCookies(new Cookie("accessToken", "invalid-token"));
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain filterChain = mock(FilterChain.class);
+
+		filter.doFilter(request, response, filterChain);
+
+		assertThat(response.getStatus()).isEqualTo(200);
+		verify(filterChain).doFilter(request, response);
+		verifyNoInteractions(jwtTokenProvider, customUserDetailsService);
+	}
+
+	@Test
+	void skipsPublicClassroomTimesEndpointEvenWhenAccessTokenCookieExists() throws Exception {
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/classrooms/1/times");
+		request.setCookies(new Cookie("accessToken", "invalid-token"));
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain filterChain = mock(FilterChain.class);
+
+		filter.doFilter(request, response, filterChain);
+
+		assertThat(response.getStatus()).isEqualTo(200);
+		verify(filterChain).doFilter(request, response);
+		verifyNoInteractions(jwtTokenProvider, customUserDetailsService);
+	}
+
+	@Test
 	void setsAuthenticationWhenAccessTokenIsValid() throws Exception {
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setCookies(new Cookie("accessToken", "valid-token"));

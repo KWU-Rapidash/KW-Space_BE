@@ -1,5 +1,9 @@
 package com.example.KW_SPACE.auth.jwt;
 
+import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_GET_PATHS;
+import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_HEAD_PATHS;
+import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_POST_PATHS;
+
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.exception.AuthException;
@@ -13,23 +17,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
-	private static final Set<String> PUBLIC_GET_PATHS = Set.of("/api/health", "/api/health/");
-	private static final Set<String> PUBLIC_HEAD_PATHS = Set.of("/api/health", "/api/health/");
-	private static final Set<String> PUBLIC_POST_PATHS = Set.of(
-			"/api/v1/auth/signup",
-			"/api/v1/auth/login",
-			"/api/v1/auth/password-reset",
-			"/api/v1/auth/logout"
-	);
+	private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final CustomUserDetailsService customUserDetailsService;
@@ -109,8 +107,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				.orElse(null);
 	}
 
-	private boolean isPublicRequest(HttpServletRequest request, String method, Set<String> paths) {
-		return method.equals(request.getMethod()) && paths.contains(resolveRequestPath(request));
+	private boolean isPublicRequest(HttpServletRequest request, String method, List<String> pathPatterns) {
+		String requestPath = resolveRequestPath(request);
+
+		return method.equals(request.getMethod())
+				&& pathPatterns.stream().anyMatch(pattern -> PATH_MATCHER.match(pattern, requestPath));
 	}
 
 	private boolean isApiOptionsRequest(HttpServletRequest request) {

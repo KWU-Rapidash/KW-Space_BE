@@ -1,5 +1,9 @@
 package com.example.KW_SPACE.config;
 
+import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_GET_PATHS;
+import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_HEAD_PATHS;
+import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_POST_PATHS;
+
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.jwt.JwtAuthenticationFilter;
@@ -36,23 +40,10 @@ public class SecurityConfig {
 						.accessDeniedHandler((request, response, accessDeniedException) ->
 								authErrorResponseWriter.write(response, AuthErrorCode.AUTH_FORBIDDEN)))
 				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers(HttpMethod.GET, "/api/health", "/api/health/").permitAll()
-						.requestMatchers(HttpMethod.HEAD, "/api/health", "/api/health/").permitAll()
-						.requestMatchers(
-								HttpMethod.GET,
-								"/api/v1/classrooms",
-								"/api/v1/classrooms/",
-								"/api/v1/classrooms/*/times",
-								"/api/v1/classrooms/*/times/"
-						).permitAll()
+						.requestMatchers(HttpMethod.GET, PUBLIC_GET_PATHS.toArray(String[]::new)).permitAll()
+						.requestMatchers(HttpMethod.HEAD, PUBLIC_HEAD_PATHS.toArray(String[]::new)).permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						.requestMatchers(
-								HttpMethod.POST,
-								"/api/v1/auth/signup",
-								"/api/v1/auth/login",
-								"/api/v1/auth/password-reset",
-								"/api/v1/auth/logout"
-						).permitAll()
+						.requestMatchers(HttpMethod.POST, PUBLIC_POST_PATHS.toArray(String[]::new)).permitAll()
 						.anyRequest().authenticated())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.build();
