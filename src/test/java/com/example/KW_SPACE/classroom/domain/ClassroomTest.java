@@ -1,4 +1,4 @@
-package com.example.KW_SPACE.reservation.domain;
+package com.example.KW_SPACE.classroom.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
