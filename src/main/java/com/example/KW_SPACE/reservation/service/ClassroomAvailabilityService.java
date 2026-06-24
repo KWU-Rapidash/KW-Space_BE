@@ -7,7 +7,9 @@ import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.domain.TimeSlot;
 import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,7 @@ public class ClassroomAvailabilityService {
 
 	private final ClassroomRepository classroomRepository;
 	private final ReservationRepository reservationRepository;
+	private final Clock clock;
 
 	public List<ClassroomAvailabilityResponse> findAvailability(int floor, LocalDate date) {
 		List<Classroom> classrooms = classroomRepository.findByFloorOrderByRoomNumberAsc(floor);
@@ -38,13 +41,20 @@ public class ClassroomAvailabilityService {
 		return classrooms.stream()
 				.map(classroom -> ClassroomAvailabilityResponse.of(
 						classroom,
-						hasAvailableSlot(reservationsByClassroom.getOrDefault(classroom.getId(), List.of()))))
+						hasAvailableSlot(date, reservationsByClassroom.getOrDefault(classroom.getId(), List.of()))))
 				.toList();
 	}
 
 	/** 10개 슬롯 중 예약과 겹치지 않는 슬롯이 하나라도 있으면 예약 가능. */
-	private boolean hasAvailableSlot(List<Reservation> reservations) {
+	private boolean hasAvailableSlot(LocalDate date, List<Reservation> reservations) {
+		LocalDate today = LocalDate.now(clock);
+		if (date.isBefore(today)) {
+			return false;
+		}
+
+		LocalTime now = LocalTime.now(clock);
 		return Arrays.stream(TimeSlot.values())
+				.filter(slot -> !date.isEqual(today) || !slot.getStartTime().isBefore(now))
 				.anyMatch(slot -> reservations.stream()
 						.noneMatch(reservation -> slot.overlaps(reservation.getStartTime(), reservation.getEndTime())));
 	}

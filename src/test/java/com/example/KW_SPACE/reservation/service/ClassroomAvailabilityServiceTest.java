@@ -9,9 +9,14 @@ import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
+import com.example.KW_SPACE.user.domain.User;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +28,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class ClassroomAvailabilityServiceTest {
 
 	private static final LocalDate DATE = LocalDate.of(2024, 4, 1);
+	private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
 	@Mock
 	private ClassroomRepository classroomRepository;
@@ -30,8 +36,16 @@ class ClassroomAvailabilityServiceTest {
 	@Mock
 	private ReservationRepository reservationRepository;
 
+	@Mock
+	private Clock clock;
+
 	@InjectMocks
 	private ClassroomAvailabilityService classroomAvailabilityService;
+
+	@BeforeEach
+	void setUp() {
+		setNow(LocalDate.of(2024, 3, 31), LocalTime.of(8, 0));
+	}
 
 	private Classroom classroom(long id, String roomNumber) {
 		Classroom classroom = Classroom.create(4, roomNumber);
@@ -40,7 +54,14 @@ class ClassroomAvailabilityServiceTest {
 	}
 
 	private Reservation reservation(Classroom classroom, LocalTime startTime, LocalTime endTime) {
-		return Reservation.create(classroom, null, DATE, startTime, endTime);
+		User user = User.create("2025404000", "이효원", null, "encoded-password");
+		return Reservation.create(classroom, user, DATE, startTime, endTime);
+	}
+
+	private void setNow(LocalDate date, LocalTime time) {
+		Instant instant = date.atTime(time).atZone(ZONE).toInstant();
+		when(clock.instant()).thenReturn(instant);
+		when(clock.getZone()).thenReturn(ZONE);
 	}
 
 	@Test
@@ -83,6 +104,36 @@ class ClassroomAvailabilityServiceTest {
 		assertThat(result).singleElement()
 				.extracting(ClassroomAvailabilityResponse::available)
 				.isEqualTo(true);
+	}
+
+	@Test
+	void marksPastDateUnavailable() {
+		setNow(LocalDate.of(2024, 4, 2), LocalTime.of(8, 0));
+		Classroom classroom = classroom(1L, "401");
+		when(classroomRepository.findByFloorOrderByRoomNumberAsc(4)).thenReturn(List.of(classroom));
+		when(reservationRepository.findByClassroomIdInAndDateAndStatus(List.of(1L), DATE, ReservationStatus.RESERVED))
+				.thenReturn(List.of());
+
+		List<ClassroomAvailabilityResponse> result = classroomAvailabilityService.findAvailability(4, DATE);
+
+		assertThat(result).singleElement()
+				.extracting(ClassroomAvailabilityResponse::available)
+				.isEqualTo(false);
+	}
+
+	@Test
+	void ignoresAlreadyStartedSlotsForToday() {
+		setNow(DATE, LocalTime.of(10, 31));
+		Classroom classroom = classroom(1L, "401");
+		when(classroomRepository.findByFloorOrderByRoomNumberAsc(4)).thenReturn(List.of(classroom));
+		when(reservationRepository.findByClassroomIdInAndDateAndStatus(List.of(1L), DATE, ReservationStatus.RESERVED))
+				.thenReturn(List.of(reservation(classroom, LocalTime.of(12, 0), LocalTime.of(22, 0))));
+
+		List<ClassroomAvailabilityResponse> result = classroomAvailabilityService.findAvailability(4, DATE);
+
+		assertThat(result).singleElement()
+				.extracting(ClassroomAvailabilityResponse::available)
+				.isEqualTo(false);
 	}
 
 	@Test
