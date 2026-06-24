@@ -20,6 +20,16 @@ class UserTest {
 	}
 
 	@Test
+	void resetsPasswordAndIncrementsTokenVersion() {
+		User user = User.create("2025404000", "이효원", null, "encoded-password");
+
+		user.resetPassword("new-encoded-password");
+
+		assertThat(user.getPasswordHash()).isEqualTo("new-encoded-password");
+		assertThat(user.getTokenVersion()).isEqualTo(1);
+	}
+
+	@Test
 	void doesNotDeclareRawPasswordOrKlasPasswordFields() {
 		assertThat(Arrays.stream(User.class.getDeclaredFields()).map(Field::getName))
 				.doesNotContain("password", "rawPassword", "klasPassword");
