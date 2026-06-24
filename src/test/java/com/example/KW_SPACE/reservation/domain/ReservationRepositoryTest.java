@@ -35,7 +35,7 @@ class ReservationRepositoryTest {
 
 	@BeforeEach
 	void setUp() {
-		classroom = classroomRepository.save(Classroom.create(4, "401"));
+		classroom = classroomRepository.save(Classroom.create("saebit-401", 4, "401"));
 		user = userRepository.save(User.create("2025404000", "이효원", "010-1234-5678", "encoded-password"));
 	}
 
@@ -102,7 +102,7 @@ class ReservationRepositoryTest {
 	@Test
 	void ignoresOtherClassroom() {
 		reserve(LocalTime.of(10, 30), LocalTime.of(11, 30));
-		Classroom otherClassroom = classroomRepository.save(Classroom.create(4, "402"));
+		Classroom otherClassroom = classroomRepository.save(Classroom.create("saebit-402", 4, "402"));
 
 		assertThat(reservationRepository.existsOverlappingReservation(
 				otherClassroom, DATE, LocalTime.of(10, 0), LocalTime.of(11, 0))).isFalse();
@@ -110,8 +110,8 @@ class ReservationRepositoryTest {
 
 	@Test
 	void findsReservedByClassroomIdsExcludingCanceledAndOtherClassrooms() {
-		Classroom other = classroomRepository.save(Classroom.create(4, "402"));
-		Classroom outside = classroomRepository.save(Classroom.create(5, "501"));
+		Classroom other = classroomRepository.save(Classroom.create("saebit-402", 4, "402"));
+		Classroom outside = classroomRepository.save(Classroom.create("saebit-501", 5, "501"));
 
 		reserve(LocalTime.of(10, 0), LocalTime.of(11, 0));                                  // classroom, RESERVED
 		reserveCanceled(LocalTime.of(13, 0), LocalTime.of(14, 0));                          // classroom, CANCELED 제외

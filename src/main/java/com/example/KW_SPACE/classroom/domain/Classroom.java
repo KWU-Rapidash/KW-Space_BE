@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @Table(
 		name = "classrooms",
 		uniqueConstraints = {
+			@UniqueConstraint(name = "uk_classrooms_code", columnNames = {"code"}),
 			@UniqueConstraint(name = "uk_classrooms_floor_room", columnNames = {"floor", "room_number"})
 		}
 )
@@ -26,21 +27,28 @@ public class Classroom {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Column(nullable = false, length = 50)
+	private String code;
+
 	@Column(nullable = false)
 	private int floor;
 
 	@Column(name = "room_number", nullable = false, length = 20)
 	private String roomNumber;
 
-	private Classroom(int floor, String roomNumber) {
+	private Classroom(String code, int floor, String roomNumber) {
+		this.code = code;
 		this.floor = floor;
 		this.roomNumber = roomNumber;
 	}
 
-	public static Classroom create(int floor, String roomNumber) {
+	public static Classroom create(String code, int floor, String roomNumber) {
+		if (code == null || code.isBlank() || code.length() > 50) {
+			throw new IllegalArgumentException("강의실 코드는 1자 이상 50자 이하여야 합니다.");
+		}
 		if (roomNumber == null || roomNumber.isBlank() || roomNumber.length() > 20) {
 			throw new IllegalArgumentException("강의실 호수는 1자 이상 20자 이하여야 합니다.");
 		}
-		return new Classroom(floor, roomNumber);
+		return new Classroom(code, floor, roomNumber);
 	}
 }

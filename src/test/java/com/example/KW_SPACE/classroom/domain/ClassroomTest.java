@@ -9,26 +9,39 @@ class ClassroomTest {
 
 	@Test
 	void createsClassroomWithValidRoomNumber() {
-		Classroom classroom = Classroom.create(4, "12345678901234567890");
+		Classroom classroom = Classroom.create("saebit-101", 4, "12345678901234567890");
 
+		assertThat(classroom.getCode()).isEqualTo("saebit-101");
 		assertThat(classroom.getRoomNumber()).isEqualTo("12345678901234567890");
 	}
 
 	@Test
+	void rejectsNullCode() {
+		assertThatThrownBy(() -> Classroom.create(null, 4, "401"))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void rejectsBlankCode() {
+		assertThatThrownBy(() -> Classroom.create("   ", 4, "401"))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
 	void rejectsNullRoomNumber() {
-		assertThatThrownBy(() -> Classroom.create(4, null))
+		assertThatThrownBy(() -> Classroom.create("saebit-401", 4, null))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
 	void rejectsBlankRoomNumber() {
-		assertThatThrownBy(() -> Classroom.create(4, "   "))
+		assertThatThrownBy(() -> Classroom.create("saebit-401", 4, "   "))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
 	void rejectsRoomNumberLongerThanTwentyCharacters() {
-		assertThatThrownBy(() -> Classroom.create(4, "123456789012345678901"))
+		assertThatThrownBy(() -> Classroom.create("saebit-401", 4, "123456789012345678901"))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 }
