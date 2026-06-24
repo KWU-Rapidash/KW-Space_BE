@@ -7,6 +7,7 @@ import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.domain.TimeSlot;
 import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
+import com.example.KW_SPACE.reservation.dto.TimeSlotResponse;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -38,24 +39,34 @@ public class ClassroomAvailabilityService {
 				.findByClassroomIdInAndDateAndStatus(classroomIds, date, ReservationStatus.RESERVED).stream()
 				.collect(Collectors.groupingBy(reservation -> reservation.getClassroom().getId()));
 
+		LocalDate today = LocalDate.now(clock);
+		LocalTime now = LocalTime.now(clock);
+
 		return classrooms.stream()
 				.map(classroom -> ClassroomAvailabilityResponse.of(
 						classroom,
-						hasAvailableSlot(date, reservationsByClassroom.getOrDefault(classroom.getId(), List.of()))))
+						toTimeSlots(date, today, now,
+								reservationsByClassroom.getOrDefault(classroom.getId(), List.of()))))
 				.toList();
 	}
 
-	/** 10개 슬롯 중 예약과 겹치지 않는 슬롯이 하나라도 있으면 예약 가능. */
-	private boolean hasAvailableSlot(LocalDate date, List<Reservation> reservations) {
-		LocalDate today = LocalDate.now(clock);
+	private List<TimeSlotResponse> toTimeSlots(
+			LocalDate date, LocalDate today, LocalTime now, List<Reservation> reservations) {
+		return Arrays.stream(TimeSlot.values())
+				.map(slot -> TimeSlotResponse.of(slot, isSlotAvailable(slot, date, today, now, reservations)))
+				.toList();
+	}
+
+	/** 지난 날짜·지난 슬롯이 아니고 예약과 겹치지 않으면 예약 가능. */
+	private boolean isSlotAvailable(
+			TimeSlot slot, LocalDate date, LocalDate today, LocalTime now, List<Reservation> reservations) {
 		if (date.isBefore(today)) {
 			return false;
 		}
-
-		LocalTime now = LocalTime.now(clock);
-		return Arrays.stream(TimeSlot.values())
-				.filter(slot -> !date.isEqual(today) || !slot.getStartTime().isBefore(now))
-				.anyMatch(slot -> reservations.stream()
-						.noneMatch(reservation -> slot.overlaps(reservation.getStartTime(), reservation.getEndTime())));
+		if (date.isEqual(today) && slot.getStartTime().isBefore(now)) {
+			return false;
+		}
+		return reservations.stream()
+				.noneMatch(reservation -> slot.overlaps(reservation.getStartTime(), reservation.getEndTime()));
 	}
 }

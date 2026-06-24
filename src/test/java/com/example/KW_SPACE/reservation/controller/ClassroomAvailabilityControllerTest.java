@@ -9,8 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.KW_SPACE.config.SecurityConfig;
 import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
+import com.example.KW_SPACE.reservation.dto.TimeSlotResponse;
 import com.example.KW_SPACE.reservation.service.ClassroomAvailabilityService;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,15 +36,18 @@ class ClassroomAvailabilityControllerTest {
 	@Test
 	void returnsClassroomAvailabilityAsJson() throws Exception {
 		when(classroomAvailabilityService.findAvailability(eq(4), any(LocalDate.class))).thenReturn(List.of(
-				new ClassroomAvailabilityResponse(1L, 4, "401", true),
-				new ClassroomAvailabilityResponse(2L, 4, "402", false)));
+				new ClassroomAvailabilityResponse(1L, 4, "401", List.of(
+						new TimeSlotResponse(LocalTime.of(9, 0), LocalTime.of(10, 30), true),
+						new TimeSlotResponse(LocalTime.of(10, 30), LocalTime.of(12, 0), false)))));
 
 		mockMvc.perform(get("/api/v1/classrooms").param("floor", "4").param("date", "2024-04-01"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$.length()").value(1))
 				.andExpect(jsonPath("$[0].roomNumber").value("401"))
-				.andExpect(jsonPath("$[0].available").value(true))
-				.andExpect(jsonPath("$[1].available").value(false));
+				.andExpect(jsonPath("$[0].times[0].start").value("09:00"))
+				.andExpect(jsonPath("$[0].times[0].end").value("10:30"))
+				.andExpect(jsonPath("$[0].times[0].available").value(true))
+				.andExpect(jsonPath("$[0].times[1].available").value(false));
 	}
 
 	@Test
