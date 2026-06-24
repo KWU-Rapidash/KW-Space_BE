@@ -7,6 +7,7 @@ import com.example.KW_SPACE.auth.klas.KlasAuthClient;
 import com.example.KW_SPACE.auth.klas.KlasAuthResult;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
+import com.example.KW_SPACE.auth.presentation.dto.PasswordResetRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import com.example.KW_SPACE.user.domain.User;
@@ -63,6 +64,18 @@ public class AuthService {
 		String accessToken = jwtTokenProvider.createAccessToken(user);
 
 		return new LoginResult(accessToken, new LoginResponse(true, "로그인에 성공했습니다."));
+	}
+
+	@Transactional
+	public void resetPassword(PasswordResetRequest request) {
+		User user = userRepository.findByKlasId(request.klasId())
+				.orElseThrow(() -> new AuthException(AuthErrorCode.AUTH_USER_NOT_FOUND));
+		KlasAuthResult klasAuthResult = klasAuthClient.verify(request.klasId(), request.klasPassword());
+		if (!klasAuthResult.authenticated()) {
+			throw new AuthException(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS);
+		}
+
+		user.resetPassword(passwordEncoder.encode(request.newPassword()));
 	}
 
 	private User saveUser(String klasId, String name, String passwordHash) {
