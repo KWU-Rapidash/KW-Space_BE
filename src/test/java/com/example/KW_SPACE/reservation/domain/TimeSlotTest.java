@@ -33,4 +33,20 @@ class TimeSlotTest {
 	void reservationInsideSlotOverlaps() {
 		assertThat(TimeSlot.SLOT_09_00.overlaps(LocalTime.of(9, 15), LocalTime.of(9, 45))).isTrue();
 	}
+
+	@Test
+	void isValidSlotAcceptsExactSlotBoundaries() {
+		assertThat(TimeSlot.isValidSlot(LocalTime.of(9, 0), LocalTime.of(10, 30))).isTrue();
+		assertThat(TimeSlot.isValidSlot(LocalTime.of(21, 0), LocalTime.of(22, 0))).isTrue();
+	}
+
+	@Test
+	void isValidSlotRejectsTimesNotMatchingAnySlot() {
+		// 슬롯 길이 불일치(60분)
+		assertThat(TimeSlot.isValidSlot(LocalTime.of(9, 0), LocalTime.of(10, 0))).isFalse();
+		// 슬롯 경계와 어긋난 시작
+		assertThat(TimeSlot.isValidSlot(LocalTime.of(9, 15), LocalTime.of(10, 45))).isFalse();
+		// 두 슬롯을 가로지름
+		assertThat(TimeSlot.isValidSlot(LocalTime.of(9, 0), LocalTime.of(12, 0))).isFalse();
+	}
 }
