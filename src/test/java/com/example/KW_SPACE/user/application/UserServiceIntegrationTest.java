@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DataJpaTest
 @Import(UserService.class)
@@ -16,6 +18,9 @@ class UserServiceIntegrationTest {
 
 	private final UserRepository userRepository;
 	private final UserService userService;
+
+	@MockitoBean
+	private PasswordEncoder passwordEncoder;
 
 	@Autowired
 	UserServiceIntegrationTest(UserRepository userRepository, UserService userService) {
