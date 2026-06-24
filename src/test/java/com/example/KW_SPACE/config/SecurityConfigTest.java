@@ -142,7 +142,8 @@ class SecurityConfigTest {
 						.param("klasId", "2025404000"))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
-				.andExpect(jsonPath("$.username").value("이효원"))
+				.andExpect(jsonPath("$.name").value("이효원"))
+				.andExpect(jsonPath("$.username").doesNotExist())
 				.andExpect(jsonPath("$.klasId").value("2025404000"))
 				.andExpect(jsonPath("$.message").value("내 정보 조회에 성공했습니다."));
 	}

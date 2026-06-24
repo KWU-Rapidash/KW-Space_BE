@@ -3,7 +3,7 @@ package com.example.KW_SPACE.user.presentation.dto;
 import com.example.KW_SPACE.user.domain.User;
 
 public record UserInfoResponse(
-        String username,
+        String name,
         String klasId,
         String phoneNumber,
         String message

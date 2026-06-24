@@ -48,7 +48,8 @@ class UserControllerTest {
 						.param("klasId", "2022202015"))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
-				.andExpect(jsonPath("$.username").value("홍길동"))
+				.andExpect(jsonPath("$.name").value("홍길동"))
+				.andExpect(jsonPath("$.username").doesNotExist())
 				.andExpect(jsonPath("$.klasId").value("2022202015"))
 				.andExpect(jsonPath("$.phoneNumber").value("010-****-5678"))
 				.andExpect(jsonPath("$.message").value("내 정보 조회에 성공했습니다."));
