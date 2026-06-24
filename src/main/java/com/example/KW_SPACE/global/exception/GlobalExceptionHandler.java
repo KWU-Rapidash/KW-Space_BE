@@ -22,14 +22,14 @@ public class GlobalExceptionHandler {
 		return toResponse(exception.getErrorCode());
 	}
 
-	@ExceptionHandler(KlasAuthServerUnavailableException.class)
-	public ResponseEntity<AuthErrorResponse> handleKlasServerUnavailable() {
-		return toResponse(AuthErrorCode.AUTH_KLAS_SERVER_UNAVAILABLE);
-	}
-
 	@ExceptionHandler(UserException.class)
 	public ResponseEntity<AuthErrorResponse> handleUserException(UserException exception) {
 		return toResponse(exception.getErrorCode());
+	}
+
+	@ExceptionHandler(KlasAuthServerUnavailableException.class)
+	public ResponseEntity<AuthErrorResponse> handleKlasServerUnavailable() {
+		return toResponse(AuthErrorCode.AUTH_KLAS_SERVER_UNAVAILABLE);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
