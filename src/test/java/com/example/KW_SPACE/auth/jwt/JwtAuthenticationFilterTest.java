@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.example.KW_SPACE.auth.cookie.AuthCookieProperties;
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.exception.AuthException;
@@ -15,6 +16,7 @@ import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRole;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
+import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -26,12 +28,22 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 class JwtAuthenticationFilterTest {
 
+	private static final AuthCookieProperties AUTH_COOKIE_PROPERTIES = new AuthCookieProperties(
+			"accessToken",
+			false,
+			true,
+			"Lax",
+			"/",
+			Duration.ofHours(1)
+	);
+
 	private final JwtTokenProvider jwtTokenProvider = mock(JwtTokenProvider.class);
 	private final CustomUserDetailsService customUserDetailsService = mock(CustomUserDetailsService.class);
 	private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
 			jwtTokenProvider,
 			customUserDetailsService,
-			new AuthErrorResponseWriter()
+			new AuthErrorResponseWriter(),
+			AUTH_COOKIE_PROPERTIES
 	);
 
 	@AfterEach
@@ -140,6 +152,31 @@ class JwtAuthenticationFilterTest {
 		assertThat(response.getStatus()).isEqualTo(200);
 		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
 		assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isSameAs(userDetails);
+	}
+
+	@Test
+	void usesConfiguredAccessTokenCookieName() throws Exception {
+		JwtAuthenticationFilter customFilter = new JwtAuthenticationFilter(
+				jwtTokenProvider,
+				customUserDetailsService,
+				new AuthErrorResponseWriter(),
+				new AuthCookieProperties("customAccessToken", false, true, "Lax", "/", Duration.ofHours(1))
+		);
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setCookies(new Cookie("customAccessToken", "valid-token"));
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		MockFilterChain filterChain = new MockFilterChain();
+		User user = User.create("2025404000", "이효원", null, "encoded-password");
+		setUserId(user, 1L);
+		CustomUserDetails userDetails = CustomUserDetails.from(user);
+		given(jwtTokenProvider.parseAccessToken("valid-token"))
+				.willReturn(new JwtAuthenticationClaims(1L, UserRole.USER, 0));
+		given(customUserDetailsService.loadUserById(1L)).willReturn(userDetails);
+
+		customFilter.doFilter(request, response, filterChain);
+
+		assertThat(response.getStatus()).isEqualTo(200);
+		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
 	}
 
 	@Test

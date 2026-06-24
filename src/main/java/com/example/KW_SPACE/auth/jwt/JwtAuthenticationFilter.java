@@ -4,6 +4,7 @@ import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_GET_PATHS;
 import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_HEAD_PATHS;
 import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_POST_PATHS;
 
+import com.example.KW_SPACE.auth.cookie.AuthCookieProperties;
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.exception.AuthException;
@@ -26,17 +27,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-	private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
 	private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 	private static final List<String> SWAGGER_PUBLIC_PATHS = List.of("/swagger-ui/**", "/v3/api-docs/**");
 
+	private final String accessTokenCookieName;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final CustomUserDetailsService customUserDetailsService;
 	private final AuthErrorResponseWriter authErrorResponseWriter;
 
 	public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
 			CustomUserDetailsService customUserDetailsService,
-			AuthErrorResponseWriter authErrorResponseWriter) {
+			AuthErrorResponseWriter authErrorResponseWriter,
+			AuthCookieProperties authCookieProperties) {
+		this.accessTokenCookieName = authCookieProperties.accessTokenName();
 		this.jwtTokenProvider = jwtTokenProvider;
 		this.customUserDetailsService = customUserDetailsService;
 		this.authErrorResponseWriter = authErrorResponseWriter;
@@ -103,7 +106,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 
 		return Arrays.stream(cookies)
-				.filter(cookie -> ACCESS_TOKEN_COOKIE_NAME.equals(cookie.getName()))
+				.filter(cookie -> accessTokenCookieName.equals(cookie.getName()))
 				.findFirst()
 				.map(Cookie::getValue)
 				.orElse(null);

@@ -1,5 +1,6 @@
 package com.example.KW_SPACE.config;
 
+import com.example.KW_SPACE.auth.cookie.AuthCookieProperties;
 import java.util.List;
 
 import io.swagger.v3.oas.models.Components;
@@ -31,7 +32,8 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
 	@Bean
-	OpenAPI kwSpaceOpenAPI(@Value("${spring.application.version:0.0.1-SNAPSHOT}") String version) {
+	OpenAPI kwSpaceOpenAPI(@Value("${spring.application.version:0.0.1-SNAPSHOT}") String version,
+		AuthCookieProperties authCookieProperties) {
 		return new OpenAPI()
 			.info(new Info()
 				.title("KW-Space API")
@@ -47,7 +49,7 @@ public class OpenApiConfig {
 				.addSecuritySchemes("accessTokenCookie", new SecurityScheme()
 					.type(SecurityScheme.Type.APIKEY)
 					.in(SecurityScheme.In.COOKIE)
-					.name("accessToken")
+					.name(authCookieProperties.accessTokenName())
 					.description("로그인 성공 시 발급되는 JWT HttpOnly Cookie")))
 			.paths(new Paths()
 				.addPathItem("/api/health", new PathItem()

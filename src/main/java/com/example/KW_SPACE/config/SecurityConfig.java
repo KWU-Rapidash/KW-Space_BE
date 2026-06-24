@@ -4,6 +4,7 @@ import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_GET_PATHS;
 import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_HEAD_PATHS;
 import static com.example.KW_SPACE.config.AuthPublicEndpoints.PUBLIC_POST_PATHS;
 
+import com.example.KW_SPACE.auth.cookie.AuthCookieProperties;
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.jwt.JwtAuthenticationFilter;
@@ -58,7 +59,9 @@ public class SecurityConfig {
 	@Bean
 	JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
 			CustomUserDetailsService customUserDetailsService,
-			AuthErrorResponseWriter authErrorResponseWriter) {
-		return new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService, authErrorResponseWriter);
+			AuthErrorResponseWriter authErrorResponseWriter,
+			AuthCookieProperties authCookieProperties) {
+		return new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService, authErrorResponseWriter,
+				authCookieProperties);
 	}
 }

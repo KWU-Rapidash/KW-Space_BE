@@ -1,10 +1,14 @@
 package com.example.KW_SPACE.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.KW_SPACE.auth.cookie.AuthCookieProperties;
+import io.swagger.v3.oas.models.OpenAPI;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -88,5 +92,16 @@ class OpenApiConfigTest {
 		mockMvc.perform(get("/swagger-ui/index.html"))
 			.andExpect(status().isOk())
 			.andExpect(content().contentTypeCompatibleWith("text/html"));
+	}
+
+	@Test
+	void openApiSecuritySchemeUsesConfiguredCookieName() {
+		OpenAPI openAPI = new OpenApiConfig().kwSpaceOpenAPI(
+			"test-version",
+			new AuthCookieProperties("customAccessToken", false, true, "Lax", "/", Duration.ofHours(1))
+		);
+
+		assertThat(openAPI.getComponents().getSecuritySchemes().get("accessTokenCookie").getName())
+			.isEqualTo("customAccessToken");
 	}
 }
