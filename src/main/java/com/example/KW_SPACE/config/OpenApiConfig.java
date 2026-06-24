@@ -301,7 +301,7 @@ public class OpenApiConfig {
 
 	private static Schema<?> reservationSchema() {
 		return object("UserReservationResponse",
-			new StringSchema().name("reservationId").description("예약 식별자"),
+			new IntegerSchema().format("int64").name("reservationId").description("예약 식별자"),
 			new StringSchema().name("date").description("예약 날짜"),
 			new StringSchema().name("classroom").description("강의실 표시명"),
 			new StringSchema().name("reserverName").description("예약자 정보"),

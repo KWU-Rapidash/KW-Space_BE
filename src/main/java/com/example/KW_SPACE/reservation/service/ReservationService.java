@@ -8,12 +8,14 @@ import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.domain.TimeSlot;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateRequest;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateResponse;
+import com.example.KW_SPACE.reservation.dto.UserReservationResponse;
 import com.example.KW_SPACE.reservation.exception.ReservationErrorCode;
 import com.example.KW_SPACE.reservation.exception.ReservationException;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +63,13 @@ public class ReservationService {
 		}
 
 		reservation.cancel();
+	}
+
+	@Transactional(readOnly = true)
+	public List<UserReservationResponse> getUserReservations(Long userId, ReservationStatus status) {
+		return reservationRepository.findUserReservations(userId, status).stream()
+				.map(UserReservationResponse::of)
+				.toList();
 	}
 
 	private void validateSlot(ReservationCreateRequest request) {
