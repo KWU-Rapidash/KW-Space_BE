@@ -24,11 +24,11 @@ class UserServiceTest {
 	private final UserService userService = new UserService(userRepository, passwordEncoder);
 
 	@Test
-	void getMyInfoReturnsUserInfoByKlasId() {
+	void getMyInfoReturnsUserInfoByUserId() {
 		User user = User.create("2022202015", "홍길동", "010-1234-5678", "encoded-password");
-		given(userRepository.findByKlasId("2022202015")).willReturn(Optional.of(user));
+		given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
-		UserInfoResponse response = userService.getMyInfo("2022202015");
+		UserInfoResponse response = userService.getMyInfo(1L);
 
 		assertThat(response.name()).isEqualTo("홍길동");
 		assertThat(response.klasId()).isEqualTo("2022202015");
@@ -36,10 +36,10 @@ class UserServiceTest {
 	}
 
 	@Test
-	void getMyInfoThrowsExceptionWhenKlasIdDoesNotExist() {
-		given(userRepository.findByKlasId("2022202015")).willReturn(Optional.empty());
+	void getMyInfoThrowsExceptionWhenUserIdDoesNotExist() {
+		given(userRepository.findById(1L)).willReturn(Optional.empty());
 
-		assertThatThrownBy(() -> userService.getMyInfo("2022202015"))
+		assertThatThrownBy(() -> userService.getMyInfo(1L))
 				.isInstanceOf(UserNotFoundException.class);
 	}
 

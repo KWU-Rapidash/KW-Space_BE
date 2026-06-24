@@ -31,7 +31,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,13 +51,13 @@ class UserControllerTest {
 	private CustomUserDetailsService customUserDetailsService;
 
 	@Test
-	@WithMockUser
 	void getMyInfoReturnsUserInfo() throws Exception {
-		given(userService.getMyInfo("2022202015"))
+		CustomUserDetails userDetails = authenticatedUserDetails(1L);
+		given(userService.getMyInfo(1L))
 				.willReturn(new UserInfoResponse("홍길동", "2022202015", "010-****-5678", "내 정보 조회에 성공했습니다."));
 
 		mockMvc.perform(get("/api/v1/user")
-						.param("klasId", "2022202015"))
+						.with(user(userDetails)))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.name").value("홍길동"))
@@ -69,13 +68,13 @@ class UserControllerTest {
 	}
 
 	@Test
-	@WithMockUser
-	void getMyInfoReturnsNotFoundWhenUserDoesNotExist() throws Exception {
-		given(userService.getMyInfo("2022202015"))
+	void getMyInfoReturnsUnauthorizedWhenAuthenticatedUserDoesNotExist() throws Exception {
+		CustomUserDetails userDetails = authenticatedUserDetails(1L);
+		given(userService.getMyInfo(1L))
 				.willThrow(new UserNotFoundException("2022202015"));
 
 		mockMvc.perform(get("/api/v1/user")
-						.param("klasId", "2022202015"))
+						.with(user(userDetails)))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"))
@@ -83,11 +82,12 @@ class UserControllerTest {
 	}
 
 	@Test
-	@WithMockUser
-	void blankKlasIdReturnsBadRequest() throws Exception {
-		mockMvc.perform(get("/api/v1/user")
-						.param("klasId", " "))
-				.andExpect(status().isBadRequest());
+	void getMyInfoRequiresAuthentication() throws Exception {
+		mockMvc.perform(get("/api/v1/user"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+
+		verifyNoInteractions(userService);
 	}
 
 	@Test

@@ -33,12 +33,13 @@ class UserServiceIntegrationTest {
 	}
 
 	@Test
-	void getMyInfoReturnsOnlyUserMatchingRequestedKlasId() {
+	void getMyInfoReturnsOnlyAuthenticatedUserInfo() {
 		userRepository.save(User.create("2022202014", "김철수", "010-1111-2222", "encoded-password-1"));
 		userRepository.save(User.create("2022202015", "홍길동", "010-1234-5678", "encoded-password-2"));
 		userRepository.saveAndFlush(User.create("2022202016", "이영희", "010-3333-4444", "encoded-password-3"));
 
-		UserInfoResponse response = userService.getMyInfo("2022202015");
+		Long authenticatedUserId = userRepository.findByKlasId("2022202015").orElseThrow().getId();
+		UserInfoResponse response = userService.getMyInfo(authenticatedUserId);
 
 		assertThat(response.name()).isEqualTo("홍길동");
 		assertThat(response.klasId()).isEqualTo("2022202015");
