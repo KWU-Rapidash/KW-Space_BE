@@ -40,6 +40,7 @@ class JwtTokenProviderTest {
 		SecretKey secretKey = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 		Claims claims = Jwts.parser()
 				.verifyWith(secretKey)
+				.clock(() -> Date.from(NOW))
 				.build()
 				.parseSignedClaims(token)
 				.getPayload();
