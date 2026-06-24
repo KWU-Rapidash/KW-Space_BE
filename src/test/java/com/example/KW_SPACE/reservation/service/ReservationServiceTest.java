@@ -96,7 +96,7 @@ class ReservationServiceTest {
 
 		ReservationCreateResponse response = reservationService.create(USER_ID, request(DATE, SLOT_START, SLOT_END));
 
-		assertThat(response.id()).isEqualTo(100L);
+		assertThat(response.reservationId()).isEqualTo(100L);
 		assertThat(response.classroomId()).isEqualTo(CLASSROOM_CODE);
 		assertThat(response.startTime()).isEqualTo(SLOT_START);
 		assertThat(response.endTime()).isEqualTo(SLOT_END);

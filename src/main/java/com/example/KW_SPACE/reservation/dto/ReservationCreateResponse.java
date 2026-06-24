@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 public record ReservationCreateResponse(
-		Long id,
+		Long reservationId,
 		String classroomId,
 		@JsonFormat(pattern = "yyyy-MM-dd") LocalDate date,
 		@JsonFormat(pattern = "HH:mm") LocalTime startTime,

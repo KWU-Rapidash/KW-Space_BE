@@ -76,7 +76,7 @@ class ReservationControllerTest {
 						.contentType("application/json")
 						.content(requestBody("saebit-101", "2024-04-01", "09:00", "10:30")))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(100))
+				.andExpect(jsonPath("$.reservationId").value(100))
 				.andExpect(jsonPath("$.classroomId").value("saebit-101"))
 				.andExpect(jsonPath("$.startTime").value("09:00"))
 				.andExpect(jsonPath("$.endTime").value("10:30"))
