@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
+import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,5 +35,19 @@ class UserServiceIntegrationTest {
 		assertThat(response.name()).isEqualTo("홍길동");
 		assertThat(response.klasId()).isEqualTo("2022202015");
 		assertThat(response.phoneNumber()).isEqualTo("010-****-5678");
+	}
+
+	@Test
+	void updatePhoneNumberPersistsChangedPhoneNumber() {
+		User user = userRepository.saveAndFlush(User.create("2022202015", "홍길동", null, "encoded-password"));
+
+		PhoneUpdateResponse response = userService.updatePhoneNumber(user.getId(), "010-1234-5678");
+
+		assertThat(response.phoneNumber()).isEqualTo("010-1234-5678");
+		assertThat(userRepository.findById(user.getId()))
+				.isPresent()
+				.get()
+				.extracting(User::getPhoneNumber)
+				.isEqualTo("010-1234-5678");
 	}
 }
