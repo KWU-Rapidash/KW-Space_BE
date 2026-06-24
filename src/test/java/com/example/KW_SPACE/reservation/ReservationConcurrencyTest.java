@@ -101,9 +101,10 @@ class ReservationConcurrencyTest {
 		}
 		ready.await();
 		start.countDown();
-		done.await(10, TimeUnit.SECONDS);
+		boolean completed = done.await(10, TimeUnit.SECONDS);
 		executor.shutdownNow();
 
+		assertThat(completed).as("두 예약 작업이 제한 시간 내 완료되어야 함").isTrue();
 		assertThat(success.get()).isEqualTo(1);
 		assertThat(conflict.get()).isEqualTo(1);
 		assertThat(reservationRepository.findByClassroomIdAndDateAndStatus(
