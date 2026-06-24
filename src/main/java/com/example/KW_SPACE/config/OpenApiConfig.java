@@ -80,11 +80,11 @@ public class OpenApiConfig {
 						field("startTime", "예약 시작 시간"),
 						field("endTime", "예약 종료 시간")),
 					reservationCreateResponses()))
-				.addPathItem("/api/v1/classrooms/{classroomId}/times", securedGet("Reserve", "강의실 예약 가능 시간 조회",
+				.addPathItem("/api/v1/classrooms/{classroomId}/times", get("Reserve", "강의실 예약 가능 시간 조회",
 					"특정 강의실의 날짜별 시간대 예약 가능 여부를 조회한다.",
 					List.of(classroomIdPathParameter(), queryParameter("date", "조회 날짜")),
 					arrayResponse("ClassroomTimeAvailabilityList", classroomTimeAvailability())))
-				.addPathItem("/api/v1/classrooms", securedGet("Reserve", "특정 날짜/층의 전체 강의실 조회",
+				.addPathItem("/api/v1/classrooms", get("Reserve", "특정 날짜/층의 전체 강의실 조회",
 					"특정 날짜와 층의 예약 가능/불가 강의실 목록을 조회한다.",
 					List.of(queryParameter("floor", "층"), queryParameter("date", "조회 날짜")),
 					arrayResponse("ClassroomAvailabilityList", classroomAvailability())))
@@ -136,6 +136,17 @@ public class OpenApiConfig {
 	private static PathItem securedGet(String tag, String summary, String description, List<Parameter> parameters,
 		Schema<?> response) {
 		Operation operation = securedOperation(tag, summary, description)
+			.responses(ok(response.getName(), response));
+		parameters.forEach(operation::addParametersItem);
+		return new PathItem().get(operation);
+	}
+
+	private static PathItem get(String tag, String summary, String description, List<Parameter> parameters,
+		Schema<?> response) {
+		Operation operation = new Operation()
+			.addTagsItem(tag)
+			.summary(summary)
+			.description(description)
 			.responses(ok(response.getName(), response));
 		parameters.forEach(operation::addParametersItem);
 		return new PathItem().get(operation);
