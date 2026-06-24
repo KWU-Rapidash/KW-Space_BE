@@ -32,7 +32,7 @@ public class ReservationService {
 		validateNotPast(request);
 
 		// 강의실 행을 비관적 쓰기 락으로 잡아 동일 강의실 동시 예약을 직렬화한다.
-		Classroom classroom = classroomRepository.findByIdForUpdate(request.classroomId())
+		Classroom classroom = classroomRepository.findByCodeForUpdate(request.classroomId())
 				.orElseThrow(() -> new ReservationException(ReservationErrorCode.CLASSROOM_NOT_FOUND));
 
 		if (reservationRepository.existsOverlappingReservation(

@@ -61,23 +61,23 @@ class ReservationControllerTest {
 
 	private String requestBody(String classroomId, String date, String startTime, String endTime) {
 		return """
-				{"classroomId":%s,"date":"%s","startTime":"%s","endTime":"%s"}
+				{"classroomId":"%s","date":"%s","startTime":"%s","endTime":"%s"}
 				""".formatted(classroomId, date, startTime, endTime);
 	}
 
 	@Test
 	void createsReservationAndReturnsCreated() throws Exception {
 		ReservationCreateResponse response = new ReservationCreateResponse(
-				100L, 10L, LocalDate.of(2024, 4, 1), LocalTime.of(9, 0), LocalTime.of(10, 30),
+				100L, "saebit-101", LocalDate.of(2024, 4, 1), LocalTime.of(9, 0), LocalTime.of(10, 30),
 				ReservationStatus.RESERVED);
 		when(reservationService.create(eq(USER_ID), any(ReservationCreateRequest.class))).thenReturn(response);
 
 		mockMvc.perform(post("/api/v1/reservations").with(user(principal))
 						.contentType("application/json")
-						.content(requestBody("10", "2024-04-01", "09:00", "10:30")))
+						.content(requestBody("saebit-101", "2024-04-01", "09:00", "10:30")))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.id").value(100))
-				.andExpect(jsonPath("$.classroomId").value(10))
+				.andExpect(jsonPath("$.classroomId").value("saebit-101"))
 				.andExpect(jsonPath("$.startTime").value("09:00"))
 				.andExpect(jsonPath("$.endTime").value("10:30"))
 				.andExpect(jsonPath("$.status").value("RESERVED"));
@@ -100,7 +100,7 @@ class ReservationControllerTest {
 
 		mockMvc.perform(post("/api/v1/reservations").with(user(principal))
 						.contentType("application/json")
-						.content(requestBody("10", "2024-04-01", "09:00", "10:30")))
+						.content(requestBody("saebit-101", "2024-04-01", "09:00", "10:30")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("RESERVATION_CONFLICT"));
 	}
@@ -109,7 +109,7 @@ class ReservationControllerTest {
 	void returnsUnauthorizedWhenNotAuthenticated() throws Exception {
 		mockMvc.perform(post("/api/v1/reservations")
 						.contentType("application/json")
-						.content(requestBody("10", "2024-04-01", "09:00", "10:30")))
+						.content(requestBody("saebit-101", "2024-04-01", "09:00", "10:30")))
 				.andExpect(status().isUnauthorized());
 	}
 }

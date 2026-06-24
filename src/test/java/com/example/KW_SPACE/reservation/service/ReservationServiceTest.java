@@ -41,7 +41,7 @@ class ReservationServiceTest {
 	private static final LocalTime SLOT_END = LocalTime.of(10, 30);
 	private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 	private static final long USER_ID = 1L;
-	private static final long CLASSROOM_ID = 10L;
+	private static final String CLASSROOM_CODE = "saebit-101";
 
 	@Mock
 	private ClassroomRepository classroomRepository;
@@ -70,19 +70,19 @@ class ReservationServiceTest {
 	}
 
 	private Classroom classroom() {
-		Classroom classroom = Classroom.create(1, "101");
-		ReflectionTestUtils.setField(classroom, "id", CLASSROOM_ID);
+		Classroom classroom = Classroom.create(CLASSROOM_CODE, 1, "101");
+		ReflectionTestUtils.setField(classroom, "id", 10L);
 		return classroom;
 	}
 
 	private ReservationCreateRequest request(LocalDate date, LocalTime start, LocalTime end) {
-		return new ReservationCreateRequest(CLASSROOM_ID, date, start, end);
+		return new ReservationCreateRequest(CLASSROOM_CODE, date, start, end);
 	}
 
 	@Test
 	void createsReservationWhenSlotIsFree() {
 		Classroom classroom = classroom();
-		when(classroomRepository.findByIdForUpdate(CLASSROOM_ID)).thenReturn(Optional.of(classroom));
+		when(classroomRepository.findByCodeForUpdate(CLASSROOM_CODE)).thenReturn(Optional.of(classroom));
 		when(reservationRepository.existsOverlappingReservation(classroom, DATE, SLOT_START, SLOT_END))
 				.thenReturn(false);
 		User user = User.create("2025404000", "이효원", null, "encoded-password");
@@ -97,7 +97,7 @@ class ReservationServiceTest {
 		ReservationCreateResponse response = reservationService.create(USER_ID, request(DATE, SLOT_START, SLOT_END));
 
 		assertThat(response.id()).isEqualTo(100L);
-		assertThat(response.classroomId()).isEqualTo(CLASSROOM_ID);
+		assertThat(response.classroomId()).isEqualTo(CLASSROOM_CODE);
 		assertThat(response.startTime()).isEqualTo(SLOT_START);
 		assertThat(response.endTime()).isEqualTo(SLOT_END);
 	}
@@ -134,7 +134,7 @@ class ReservationServiceTest {
 
 	@Test
 	void rejectsWhenClassroomNotFound() {
-		when(classroomRepository.findByIdForUpdate(CLASSROOM_ID)).thenReturn(Optional.empty());
+		when(classroomRepository.findByCodeForUpdate(CLASSROOM_CODE)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> reservationService.create(USER_ID, request(DATE, SLOT_START, SLOT_END)))
 				.isInstanceOf(ReservationException.class)
@@ -146,7 +146,7 @@ class ReservationServiceTest {
 	@Test
 	void rejectsWhenOverlappingReservationExists() {
 		Classroom classroom = classroom();
-		when(classroomRepository.findByIdForUpdate(CLASSROOM_ID)).thenReturn(Optional.of(classroom));
+		when(classroomRepository.findByCodeForUpdate(CLASSROOM_CODE)).thenReturn(Optional.of(classroom));
 		when(reservationRepository.existsOverlappingReservation(eq(classroom), eq(DATE), eq(SLOT_START), eq(SLOT_END)))
 				.thenReturn(true);
 

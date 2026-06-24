@@ -45,7 +45,8 @@ class ReservationConcurrencyTest {
 	@Autowired
 	private ReservationRepository reservationRepository;
 
-	private Long classroomId;
+	private String classroomCode;
+	private Long classroomDbId;
 	private Long userId;
 
 	@BeforeEach
@@ -54,7 +55,9 @@ class ReservationConcurrencyTest {
 		classroomRepository.deleteAll();
 		userRepository.deleteAll();
 
-		classroomId = classroomRepository.save(Classroom.create(1, "101")).getId();
+		Classroom classroom = classroomRepository.save(Classroom.create("saebit-101", 1, "101"));
+		classroomCode = classroom.getCode();
+		classroomDbId = classroom.getId();
 		userId = userRepository.save(User.create("2025404000", "이효원", null, "encoded-password")).getId();
 	}
 
@@ -80,7 +83,7 @@ class ReservationConcurrencyTest {
 			try {
 				start.await();
 				reservationService.create(userId,
-						new ReservationCreateRequest(classroomId, DATE, SLOT_START, SLOT_END));
+						new ReservationCreateRequest(classroomCode, DATE, SLOT_START, SLOT_END));
 				success.incrementAndGet();
 			} catch (ReservationException exception) {
 				if (exception.getErrorCode() == ReservationErrorCode.RESERVATION_CONFLICT) {
@@ -104,6 +107,6 @@ class ReservationConcurrencyTest {
 		assertThat(success.get()).isEqualTo(1);
 		assertThat(conflict.get()).isEqualTo(1);
 		assertThat(reservationRepository.findByClassroomIdAndDateAndStatus(
-				classroomId, DATE, ReservationStatus.RESERVED)).hasSize(1);
+				classroomDbId, DATE, ReservationStatus.RESERVED)).hasSize(1);
 	}
 }
