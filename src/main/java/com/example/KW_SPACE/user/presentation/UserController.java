@@ -1,9 +1,16 @@
 package com.example.KW_SPACE.user.presentation;
 
+import com.example.KW_SPACE.auth.security.CustomUserDetails;
 import com.example.KW_SPACE.user.application.UserService;
+import com.example.KW_SPACE.user.presentation.dto.PasswordUpdateRequest;
+import com.example.KW_SPACE.user.presentation.dto.PasswordUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,5 +29,15 @@ public class UserController {
     @GetMapping({"", "/"})
     public UserInfoResponse getMyInfo(@RequestParam @NotBlank String klasId) {
         return userService.getMyInfo(klasId);
+    }
+
+    @PatchMapping("/password")
+    public PasswordUpdateResponse updatePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody PasswordUpdateRequest request
+    ) {
+        userService.updatePassword(userDetails.getId(), request.currentPassword(), request.newPassword());
+
+        return PasswordUpdateResponse.updated();
     }
 }
