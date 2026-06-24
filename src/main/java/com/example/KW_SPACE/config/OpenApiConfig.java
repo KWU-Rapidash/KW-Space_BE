@@ -62,12 +62,14 @@ public class OpenApiConfig {
 				.addPathItem("/api/v1/auth/login", post("Auth", "로그인", "학번과 비밀번호로 로그인하고 JWT Cookie를 발급한다.",
 					object("LoginRequest", field("klasId", "학번"), field("password", "비밀번호")),
 					messageResponse("LoginResponse", "로그인 성공 여부와 JWT Cookie 발급 결과")))
+				.addPathItem("/api/v1/auth/logout", post("Auth", "로그아웃", "accessToken Cookie를 삭제한다.",
+					messageResponse("LogoutResponse", "로그아웃 성공 여부와 Cookie 삭제 결과")))
 				.addPathItem("/api/v1/auth/signup", postWithResponses("Auth", "회원가입", "KLAS 재학생 인증 후 서비스 계정을 생성한다.",
 					object("SignupRequest",
+						field("name", "이름"),
 						field("klasId", "학번"),
 						field("klasPassword", "KLAS 인증용 비밀번호"),
-						field("password", "서비스 로그인 비밀번호"),
-						field("phoneNumber", "전화번호")),
+						field("password", "서비스 로그인 비밀번호")),
 					signupResponses()))
 				.addPathItem("/api/v1/auth/password-reset", postWithResponses("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
 					object("PasswordResetRequest",
@@ -126,6 +128,14 @@ public class OpenApiConfig {
 			.description(description)
 			.requestBody(jsonRequest(request))
 			.responses(responses));
+	}
+
+	private static PathItem post(String tag, String summary, String description, Schema<?> response) {
+		return new PathItem().post(new Operation()
+			.addTagsItem(tag)
+			.summary(summary)
+			.description(description)
+			.responses(ok(response.getName(), response)));
 	}
 
 	private static PathItem securedPostWithResponses(String tag, String summary, String description, Schema<?> request,
@@ -311,7 +321,7 @@ public class OpenApiConfig {
 	private static Schema<?> reservationStatusSchema() {
 		StringSchema schema = new StringSchema();
 		schema.description("예약 상태");
-		schema.setEnum(List.of("RESERVED", "CANCELLED"));
+		schema.setEnum(List.of("RESERVED", "CANCELED"));
 		return schema;
 	}
 
