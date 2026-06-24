@@ -68,16 +68,17 @@ class ReservationControllerTest {
 	@Test
 	void createsReservationAndReturnsCreated() throws Exception {
 		ReservationCreateResponse response = new ReservationCreateResponse(
-				100L, "saebit-101", LocalDate.of(2024, 4, 1), LocalTime.of(9, 0), LocalTime.of(10, 30),
+				100L, "saebit-101", "101", LocalDate.of(2024, 4, 1), LocalTime.of(9, 0), LocalTime.of(10, 30),
 				ReservationStatus.RESERVED);
 		when(reservationService.create(eq(USER_ID), any(ReservationCreateRequest.class))).thenReturn(response);
 
 		mockMvc.perform(post("/api/v1/reservations").with(user(principal))
 						.contentType("application/json")
 						.content(requestBody("saebit-101", "2024-04-01", "09:00", "10:30")))
-				.andExpect(status().isCreated())
+				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reservationId").value(100))
 				.andExpect(jsonPath("$.classroomId").value("saebit-101"))
+				.andExpect(jsonPath("$.classroomNumber").value("101"))
 				.andExpect(jsonPath("$.startTime").value("09:00"))
 				.andExpect(jsonPath("$.endTime").value("10:30"))
 				.andExpect(jsonPath("$.status").value("RESERVED"));

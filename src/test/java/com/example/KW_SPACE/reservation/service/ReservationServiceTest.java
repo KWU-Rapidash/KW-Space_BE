@@ -98,6 +98,7 @@ class ReservationServiceTest {
 
 		assertThat(response.reservationId()).isEqualTo(100L);
 		assertThat(response.classroomId()).isEqualTo(CLASSROOM_CODE);
+		assertThat(response.classroomNumber()).isEqualTo("101");
 		assertThat(response.startTime()).isEqualTo(SLOT_START);
 		assertThat(response.endTime()).isEqualTo(SLOT_END);
 	}

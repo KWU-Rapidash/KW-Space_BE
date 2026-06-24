@@ -9,6 +9,7 @@ import java.time.LocalTime;
 public record ReservationCreateResponse(
 		Long reservationId,
 		String classroomId,
+		String classroomNumber,
 		@JsonFormat(pattern = "yyyy-MM-dd") LocalDate date,
 		@JsonFormat(pattern = "HH:mm") LocalTime startTime,
 		@JsonFormat(pattern = "HH:mm") LocalTime endTime,
@@ -18,6 +19,7 @@ public record ReservationCreateResponse(
 		return new ReservationCreateResponse(
 				reservation.getId(),
 				reservation.getClassroom().getCode(),
+				reservation.getClassroom().getRoomNumber(),
 				reservation.getDate(),
 				reservation.getStartTime(),
 				reservation.getEndTime(),

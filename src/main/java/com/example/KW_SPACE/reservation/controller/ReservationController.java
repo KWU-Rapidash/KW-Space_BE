@@ -22,7 +22,7 @@ public class ReservationController {
 	private final ReservationService reservationService;
 
 	@PostMapping
-	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseStatus(HttpStatus.OK)
 	public ReservationCreateResponse create(
 			@AuthenticationPrincipal CustomUserDetails userDetails,
 			@Valid @RequestBody ReservationCreateRequest request) {
