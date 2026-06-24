@@ -85,8 +85,12 @@ public class User {
 		this.phoneNumber = phoneNumber;
 	}
 
-	public void resetPassword(String passwordHash) {
+	public void changePasswordHash(String passwordHash) {
 		this.passwordHash = passwordHash;
+	}
+
+	public void resetPassword(String passwordHash) {
+		changePasswordHash(passwordHash);
 		this.tokenVersion++;
 	}
 

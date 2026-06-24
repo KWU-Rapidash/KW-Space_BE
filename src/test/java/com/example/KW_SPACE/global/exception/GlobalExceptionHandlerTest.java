@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.klas.KlasAuthServerUnavailableException;
+import com.example.KW_SPACE.user.application.UserErrorCode;
+import com.example.KW_SPACE.user.application.UserException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -62,6 +64,14 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	void mapsUserExceptionToConfiguredStatus() throws Exception {
+		mockMvc.perform(post("/test/user/current-password-mismatch"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("USER_CURRENT_PASSWORD_MISMATCH"))
+				.andExpect(jsonPath("$.message").value("현재 비밀번호가 일치하지 않습니다."));
+	}
+
+	@Test
 	void mapsMissingRequiredFieldsTo400() throws Exception {
 		mockMvc.perform(post("/test/auth/validate")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -102,6 +112,11 @@ class GlobalExceptionHandlerTest {
 		@PostMapping("/test/auth/klas-unavailable")
 		void klasUnavailable() {
 			throw new KlasAuthServerUnavailableException("KLAS authentication server is unavailable");
+		}
+
+		@PostMapping("/test/user/current-password-mismatch")
+		void currentPasswordMismatch() {
+			throw new UserException(UserErrorCode.USER_CURRENT_PASSWORD_MISMATCH);
 		}
 
 		@PostMapping("/test/auth/validate")

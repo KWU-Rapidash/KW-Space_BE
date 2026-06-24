@@ -4,6 +4,8 @@ import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponse;
 import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.klas.KlasAuthServerUnavailableException;
+import com.example.KW_SPACE.user.application.UserErrorCode;
+import com.example.KW_SPACE.user.application.UserException;
 import com.example.KW_SPACE.user.application.UserNotFoundException;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,11 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(AuthException.class)
 	public ResponseEntity<AuthErrorResponse> handleAuthException(AuthException exception) {
+		return toResponse(exception.getErrorCode());
+	}
+
+	@ExceptionHandler(UserException.class)
+	public ResponseEntity<AuthErrorResponse> handleUserException(UserException exception) {
 		return toResponse(exception.getErrorCode());
 	}
 
@@ -64,6 +71,12 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(errorCode.getStatus())
 				.body(AuthErrorResponse.from(errorCode));
+	}
+
+	private ResponseEntity<AuthErrorResponse> toResponse(UserErrorCode errorCode) {
+		return ResponseEntity
+				.status(errorCode.getStatus())
+				.body(new AuthErrorResponse(errorCode.name(), errorCode.getMessage()));
 	}
 
 	@ExceptionHandler(UserNotFoundException.class)

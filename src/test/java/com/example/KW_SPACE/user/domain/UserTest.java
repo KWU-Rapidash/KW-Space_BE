@@ -20,6 +20,16 @@ class UserTest {
 	}
 
 	@Test
+	void changesPasswordHash() {
+		User user = User.create("2025404000", "이효원", null, "encoded-password");
+
+		user.changePasswordHash("new-encoded-password");
+
+		assertThat(user.getPasswordHash()).isEqualTo("new-encoded-password");
+		assertThat(user.getTokenVersion()).isZero();
+	}
+
+	@Test
 	void resetsPasswordAndIncrementsTokenVersion() {
 		User user = User.create("2025404000", "이효원", null, "encoded-password");
 
