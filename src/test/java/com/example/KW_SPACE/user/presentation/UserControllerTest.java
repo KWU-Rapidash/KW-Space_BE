@@ -148,7 +148,10 @@ class UserControllerTest {
 	}
 
 	@Test
-	void updatePhoneNumberReturnsBadRequestWhenRequiredFieldIsMissing() throws Exception {
+	void updatePhoneNumberReturnsBadRequestWhenPhoneNumberIsBlank() throws Exception {
+		given(userService.updatePhoneNumber(1L, " "))
+				.willThrow(new UserException(UserErrorCode.USER_INVALID_PHONE_NUMBER));
+
 		mockMvc.perform(patch("/api/v1/user/phone")
 						.with(user(authenticatedUserDetails(1L)))
 						.contentType(MediaType.APPLICATION_JSON)
@@ -158,9 +161,8 @@ class UserControllerTest {
 								}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
-
-		verifyNoInteractions(userService);
+				.andExpect(jsonPath("$.code").value("USER_INVALID_PHONE_NUMBER"))
+				.andExpect(jsonPath("$.message").value("전화번호 형식이 올바르지 않습니다."));
 	}
 
 	@Test

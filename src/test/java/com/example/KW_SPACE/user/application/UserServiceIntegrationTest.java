@@ -6,6 +6,7 @@ import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -17,11 +18,13 @@ class UserServiceIntegrationTest {
 
 	private final UserRepository userRepository;
 	private final UserService userService;
+	private final EntityManager entityManager;
 
 	@Autowired
-	UserServiceIntegrationTest(UserRepository userRepository, UserService userService) {
+	UserServiceIntegrationTest(UserRepository userRepository, UserService userService, EntityManager entityManager) {
 		this.userRepository = userRepository;
 		this.userService = userService;
+		this.entityManager = entityManager;
 	}
 
 	@Test
@@ -44,6 +47,7 @@ class UserServiceIntegrationTest {
 		PhoneUpdateResponse response = userService.updatePhoneNumber(user.getId(), "010-1234-5678");
 
 		assertThat(response.phoneNumber()).isEqualTo("010-1234-5678");
+		entityManager.clear();
 		assertThat(userRepository.findById(user.getId()))
 				.isPresent()
 				.get()
