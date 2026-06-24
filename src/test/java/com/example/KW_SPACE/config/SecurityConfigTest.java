@@ -126,8 +126,7 @@ class SecurityConfigTest {
 
 	@Test
 	void userEndpointRequiresAuthentication() throws Exception {
-		mockMvc.perform(get("/api/v1/user")
-						.param("klasId", "2025404000"))
+		mockMvc.perform(get("/api/v1/user"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
@@ -153,8 +152,7 @@ class SecurityConfigTest {
 		String accessToken = jwtTokenProvider.createAccessToken(user);
 
 		mockMvc.perform(get("/api/v1/user")
-						.cookie(new Cookie("accessToken", accessToken))
-						.param("klasId", "2025404000"))
+						.cookie(new Cookie("accessToken", accessToken)))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.name").value("이효원"))
@@ -185,8 +183,7 @@ class SecurityConfigTest {
 	@Test
 	void invalidAccessTokenCookieReturnsStandardUnauthorizedResponse() throws Exception {
 		mockMvc.perform(get("/api/v1/user")
-						.cookie(new Cookie("accessToken", "invalid-token"))
-						.param("klasId", "2025404000"))
+						.cookie(new Cookie("accessToken", "invalid-token")))
 				.andExpect(status().isUnauthorized())
 				.andExpect(cookie().doesNotExist("JSESSIONID"))
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
