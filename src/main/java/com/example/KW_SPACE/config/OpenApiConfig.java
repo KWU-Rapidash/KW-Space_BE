@@ -223,7 +223,9 @@ public class OpenApiConfig {
 
 	private static ApiResponses passwordResetResponses() {
 		return ok("PasswordResetResponse", messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부"))
-			.addApiResponse("404", new ApiResponse().description("사용자를 찾을 수 없음"));
+			.addApiResponse("404", new ApiResponse().description("사용자를 찾을 수 없음"))
+			.addApiResponse("422", new ApiResponse().description("입력값 형식 오류"))
+			.addApiResponse("503", new ApiResponse().description("KLAS 서버를 사용할 수 없음"));
 	}
 
 	private static ApiResponses reservationCreateResponses() {

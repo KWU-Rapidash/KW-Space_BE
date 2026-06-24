@@ -220,6 +220,26 @@ class JwtAuthenticationFilterTest {
 		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
 	}
 
+	@Test
+	void writesAuthErrorWhenRoleDoesNotMatch() throws Exception {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setCookies(new Cookie("accessToken", "valid-token"));
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		MockFilterChain filterChain = new MockFilterChain();
+		User user = User.create("2025404000", "이효원", null, "encoded-password");
+		setUserId(user, 1L);
+		CustomUserDetails userDetails = CustomUserDetails.from(user);
+		given(jwtTokenProvider.parseAccessToken("valid-token"))
+				.willReturn(new JwtAuthenticationClaims(1L, UserRole.ADMIN, 0));
+		given(customUserDetailsService.loadUserById(1L)).willReturn(userDetails);
+
+		filter.doFilter(request, response, filterChain);
+
+		assertThat(response.getStatus()).isEqualTo(401);
+		assertThat(response.getContentAsString()).contains("AUTH_INVALID_TOKEN");
+		assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+	}
+
 	private void setUserId(User user, Long id) {
 		try {
 			var field = User.class.getDeclaredField("id");

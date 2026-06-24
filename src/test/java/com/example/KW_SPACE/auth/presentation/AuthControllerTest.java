@@ -2,6 +2,8 @@ package com.example.KW_SPACE.auth.presentation;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,6 +21,7 @@ import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
+import com.example.KW_SPACE.auth.presentation.dto.PasswordResetRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import com.example.KW_SPACE.auth.security.CustomUserDetailsService;
@@ -136,6 +139,23 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void signupReturnsBadRequestWhenRequiredFieldIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/signup")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "name": " ",
+								  "klasId": "2025404000",
+								  "klasPassword": "valid-klas-password",
+								  "password": "service-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
 	void signupReturnsUnprocessableContentWhenPasswordIsTooShort() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/signup")
 						.with(csrf())
@@ -210,6 +230,129 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void loginReturnsBadRequestWhenPasswordIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/login")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "password": " "
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void passwordResetReturnsSuccessResponse() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": "valid-klas-password",
+								  "newPassword": "new-service-password"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("비밀번호 재설정에 성공했습니다."));
+
+		verify(authService).resetPassword(any(PasswordResetRequest.class));
+	}
+
+	@Test
+	void passwordResetReturnsBadRequestWhenRequiredFieldIsMissing() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "newPassword": "new-service-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void passwordResetReturnsBadRequestWhenKlasPasswordIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": " ",
+								  "newPassword": "new-service-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void passwordResetReturnsUnprocessableContentWhenNewPasswordIsTooShort() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": "valid-klas-password",
+								  "newPassword": "short"
+								}
+								"""))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("AUTH_PASSWORD_POLICY_VIOLATION"));
+	}
+
+	@Test
+	void passwordResetReturnsUnauthorizedWhenKlasCredentialsAreInvalid() throws Exception {
+		doThrow(new AuthException(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS))
+				.when(authService)
+				.resetPassword(any(PasswordResetRequest.class));
+
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": "wrong-klas-password",
+								  "newPassword": "new-service-password"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_KLAS_CREDENTIALS"))
+				.andExpect(jsonPath("$.message").value("KLAS 인증 정보가 일치하지 않습니다."));
+	}
+
+	@Test
+	void passwordResetReturnsNotFoundWhenUserDoesNotExist() throws Exception {
+		doThrow(new AuthException(AuthErrorCode.AUTH_USER_NOT_FOUND))
+				.when(authService)
+				.resetPassword(any(PasswordResetRequest.class));
+
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": "valid-klas-password",
+								  "newPassword": "new-service-password"
+								}
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("AUTH_USER_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 	}
 
 	@Test

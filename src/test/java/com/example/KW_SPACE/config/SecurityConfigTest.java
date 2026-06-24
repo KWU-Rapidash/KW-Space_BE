@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -126,6 +127,20 @@ class SecurityConfigTest {
 	}
 
 	@Test
+	void userPhoneUpdateEndpointRequiresAuthentication() throws Exception {
+		mockMvc.perform(patch("/api/v1/user/phone")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "phoneNumber": "010-1234-5678"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+	}
+
+	@Test
 	void validAccessTokenCookieAuthenticatesProtectedRequest() throws Exception {
 		User user = userRepository.saveAndFlush(User.create("2025404000", "이효원", null, "encoded-password"));
 		String accessToken = jwtTokenProvider.createAccessToken(user);
@@ -139,6 +154,25 @@ class SecurityConfigTest {
 				.andExpect(jsonPath("$.username").doesNotExist())
 				.andExpect(jsonPath("$.klasId").value("2025404000"))
 				.andExpect(jsonPath("$.message").value("내 정보 조회에 성공했습니다."));
+	}
+
+	@Test
+	void validAccessTokenCookieAllowsPhoneNumberUpdate() throws Exception {
+		User user = userRepository.saveAndFlush(User.create("2025404000", "이효원", null, "encoded-password"));
+		String accessToken = jwtTokenProvider.createAccessToken(user);
+
+		mockMvc.perform(patch("/api/v1/user/phone")
+						.cookie(new Cookie("accessToken", accessToken))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "phoneNumber": "010-1234-5678"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.phoneNumber").value("010-1234-5678"))
+				.andExpect(jsonPath("$.message").value("전화번호 수정에 성공했습니다."));
 	}
 
 	@Test
