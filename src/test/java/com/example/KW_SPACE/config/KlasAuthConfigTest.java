@@ -1,18 +1,21 @@
 package com.example.KW_SPACE.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.KW_SPACE.auth.klas.FakeKlasAuthClient;
 import com.example.KW_SPACE.auth.klas.KlasAuthClient;
-import com.example.KW_SPACE.auth.klas.KlasAuthServerUnavailableException;
+import com.example.KW_SPACE.auth.klas.RealKlasAuthClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Clock;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 class KlasAuthConfigTest {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withUserConfiguration(KlasAuthConfig.class);
+			.withUserConfiguration(KlasAuthConfig.class)
+			.withBean(ObjectMapper.class, ObjectMapper::new)
+			.withBean(Clock.class, Clock::systemUTC);
 
 	@Test
 	void registersFakeKlasAuthClientOnlyForTestProfile() {
@@ -23,14 +26,11 @@ class KlasAuthConfigTest {
 	}
 
 	@Test
-	void registersUnavailableKlasAuthClientWhenRealClientIsNotConfigured() {
+	void registersRealKlasAuthClientWhenNotLocalOrTestProfile() {
 		contextRunner.run(context -> {
 			assertThat(context).hasNotFailed();
-			KlasAuthClient klasAuthClient = context.getBean(KlasAuthClient.class);
-
-			assertThatThrownBy(() -> klasAuthClient.verify("2025404000", "klas-password"))
-					.isInstanceOf(KlasAuthServerUnavailableException.class)
-					.hasMessage("Real KLAS auth client is not configured");
+			assertThat(context.getBean(KlasAuthClient.class))
+					.isInstanceOf(RealKlasAuthClient.class);
 		});
 	}
 }
