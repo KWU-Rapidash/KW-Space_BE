@@ -76,6 +76,15 @@ class UserServiceTest {
 	}
 
 	@Test
+	void updatePhoneNumberThrowsExceptionWhenPhoneNumberIsNull() {
+		assertThatThrownBy(() -> userService.updatePhoneNumber(1L, null))
+				.isInstanceOf(UserException.class)
+				.extracting("errorCode")
+				.isEqualTo(UserErrorCode.USER_INVALID_PHONE_NUMBER);
+		verifyNoInteractions(userRepository);
+	}
+
+	@Test
 	void updatePhoneNumberThrowsExceptionWhenPhoneNumberIsDuplicated() {
 		User user = User.create("2022202015", "홍길동", "010-1234-5678", "encoded-password");
 		given(userRepository.findById(1L)).willReturn(Optional.of(user));

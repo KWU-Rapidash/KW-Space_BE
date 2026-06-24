@@ -31,7 +31,7 @@ public class UserService {
 
     @Transactional
     public PhoneUpdateResponse updatePhoneNumber(Long userId, String phoneNumber) {
-        if (!phoneNumber.matches(PHONE_NUMBER_PATTERN)) {
+        if (phoneNumber == null || !phoneNumber.matches(PHONE_NUMBER_PATTERN)) {
             throw new UserException(UserErrorCode.USER_INVALID_PHONE_NUMBER);
         }
 
