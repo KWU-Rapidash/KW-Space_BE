@@ -1,9 +1,12 @@
 package com.example.KW_SPACE.user.application;
 
+import com.example.KW_SPACE.reservation.domain.Reservation;
+import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,10 +21,13 @@ public class UserService {
 	private static final String PHONE_NUMBER_UNIQUE_CONSTRAINT = "uk_users_phone_number";
 
 	private final UserRepository userRepository;
+	private final ReservationRepository reservationRepository;
 	private final PasswordEncoder passwordEncoder;
 
-	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	public UserService(UserRepository userRepository, ReservationRepository reservationRepository,
+			PasswordEncoder passwordEncoder) {
 		this.userRepository = userRepository;
+		this.reservationRepository = reservationRepository;
 		this.passwordEncoder = passwordEncoder;
 	}
 
@@ -59,6 +65,24 @@ public class UserService {
 		}
 
 		user.changePasswordHash(passwordEncoder.encode(newPassword));
+	}
+
+	@Transactional
+	public void withdraw(Long userId, String password) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException(String.valueOf(userId)));
+
+		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+			throw new UserException(UserErrorCode.USER_CURRENT_PASSWORD_MISMATCH);
+		}
+
+		List<Reservation> reservations = reservationRepository.findByUserId(userId);
+		if (!reservations.isEmpty()) {
+			reservationRepository.deleteAllInBatch(reservations);
+		}
+
+		userRepository.delete(user);
+		userRepository.flush();
 	}
 
 	private User saveUser(User user) {
