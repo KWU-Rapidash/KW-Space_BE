@@ -61,6 +61,14 @@ class ClassroomAvailabilityControllerTest {
 	}
 
 	@Test
+	void returnsOkWhenFloorIsAtMaxBoundary() throws Exception {
+		when(classroomAvailabilityService.findAvailability(eq(9), any(LocalDate.class))).thenReturn(List.of());
+
+		mockMvc.perform(get("/api/v1/classrooms").param("floor", "9").param("date", "2024-04-01"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void returnsBadRequestWhenFloorIsNotNumber() throws Exception {
 		mockMvc.perform(get("/api/v1/classrooms").param("floor", "abc").param("date", "2024-04-01"))
 				.andExpect(status().isBadRequest());

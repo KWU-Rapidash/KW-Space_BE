@@ -1,6 +1,8 @@
 package com.example.KW_SPACE.reservation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.KW_SPACE.classroom.domain.Classroom;
@@ -61,12 +63,22 @@ class ClassroomAvailabilityServiceTest {
 
 	private void setNow(LocalDate date, LocalTime time) {
 		Instant instant = date.atTime(time).atZone(ZONE).toInstant();
-		when(clock.instant()).thenReturn(instant);
-		when(clock.getZone()).thenReturn(ZONE);
+		lenient().when(clock.instant()).thenReturn(instant);
+		lenient().when(clock.getZone()).thenReturn(ZONE);
 	}
 
 	private List<TimeSlotResponse> times(ClassroomAvailabilityResponse response) {
 		return response.times();
+	}
+
+	@Test
+	void returnsEmptyAndSkipsReservationLookupWhenFloorHasNoClassroom() {
+		when(classroomRepository.findByFloorOrderByRoomNumberAsc(7)).thenReturn(List.of());
+
+		List<ClassroomAvailabilityResponse> result = classroomAvailabilityService.findAvailability(7, DATE);
+
+		assertThat(result).isEmpty();
+		verifyNoInteractions(reservationRepository);
 	}
 
 	@Test

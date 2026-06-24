@@ -10,6 +10,7 @@ import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
 import com.example.KW_SPACE.reservation.dto.TimeSlotResponse;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
@@ -35,12 +36,15 @@ public class ClassroomAvailabilityService {
 		}
 
 		List<Long> classroomIds = classrooms.stream().map(Classroom::getId).toList();
+		// getClassroom().getId()는 LAZY 프록시의 식별자 접근이라 추가 쿼리를 유발하지 않는다(외래키 값 보유).
 		Map<Long, List<Reservation>> reservationsByClassroom = reservationRepository
 				.findByClassroomIdInAndDateAndStatus(classroomIds, date, ReservationStatus.RESERVED).stream()
 				.collect(Collectors.groupingBy(reservation -> reservation.getClassroom().getId()));
 
-		LocalDate today = LocalDate.now(clock);
-		LocalTime now = LocalTime.now(clock);
+		// today/now는 자정 경계에서 어긋나지 않도록 단일 스냅샷에서 파생한다.
+		LocalDateTime nowDateTime = LocalDateTime.now(clock);
+		LocalDate today = nowDateTime.toLocalDate();
+		LocalTime now = nowDateTime.toLocalTime();
 
 		return classrooms.stream()
 				.map(classroom -> ClassroomAvailabilityResponse.of(
