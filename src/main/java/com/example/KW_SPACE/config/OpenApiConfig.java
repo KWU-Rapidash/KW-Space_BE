@@ -349,7 +349,8 @@ public class OpenApiConfig {
 		return object("UserInfoResponse",
 			new StringSchema().name("name").description("이름"),
 			new StringSchema().name("klasId").description("학번"),
-			new StringSchema().name("phoneNumber").description("전화번호"));
+			new StringSchema().name("phoneNumber").description("전화번호"),
+			new StringSchema().name("message").description("내 정보 조회 결과 메시지"));
 	}
 
 	private static Schema<?> phoneUpdateResponse() {
