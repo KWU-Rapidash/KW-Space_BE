@@ -13,6 +13,7 @@ import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.classroom.domain.ClassroomRepository;
 import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
+import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateRequest;
 import com.example.KW_SPACE.reservation.dto.ReservationCreateResponse;
 import com.example.KW_SPACE.reservation.exception.ReservationErrorCode;
@@ -142,6 +143,32 @@ class ReservationServiceTest {
 				.extracting("errorCode").isEqualTo(ReservationErrorCode.CLASSROOM_NOT_FOUND);
 
 		verify(reservationRepository, never()).save(any());
+	}
+
+	@Test
+	void getUserReservationsMapsToResponse() {
+		Classroom classroom = classroom();
+		User user = User.create("2025404000", "이효원", null, "encoded-password");
+		Reservation reservation = Reservation.create(classroom, user, DATE, SLOT_START, SLOT_END);
+		ReflectionTestUtils.setField(reservation, "id", 100L);
+		when(reservationRepository.findUserReservations(USER_ID, ReservationStatus.RESERVED))
+				.thenReturn(java.util.List.of(reservation));
+
+		var responses = reservationService.getUserReservations(USER_ID, ReservationStatus.RESERVED);
+
+		assertThat(responses).hasSize(1);
+		assertThat(responses.get(0).reservationId()).isEqualTo(100L);
+		assertThat(responses.get(0).classroom()).isEqualTo(CLASSROOM_CODE);
+		assertThat(responses.get(0).reserverName()).isEqualTo("이효원");
+		assertThat(responses.get(0).status()).isEqualTo(ReservationStatus.RESERVED);
+	}
+
+	@Test
+	void getUserReservationsPassesNullStatusForAll() {
+		when(reservationRepository.findUserReservations(USER_ID, null)).thenReturn(java.util.List.of());
+
+		assertThat(reservationService.getUserReservations(USER_ID, null)).isEmpty();
+		verify(reservationRepository).findUserReservations(USER_ID, null);
 	}
 
 	@Test
