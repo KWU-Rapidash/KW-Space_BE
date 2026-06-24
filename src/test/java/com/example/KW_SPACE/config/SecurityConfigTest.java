@@ -1,5 +1,7 @@
 package com.example.KW_SPACE.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -60,6 +62,21 @@ class SecurityConfigTest {
 	}
 
 	@Test
+	void classroomListEndpointIsPublic() throws Exception {
+		mockMvc.perform(get("/api/v1/classrooms")
+						.param("floor", "1")
+						.param("date", "2024-04-01"))
+				.andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
+	}
+
+	@Test
+	void classroomTimesEndpointIsPublic() throws Exception {
+		mockMvc.perform(get("/api/v1/classrooms/1/times")
+						.param("date", "2024-04-01"))
+				.andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
+	}
+
+	@Test
 	void jsonLoginWithoutCsrfTokenReachesAuthController() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -77,6 +94,30 @@ class SecurityConfigTest {
 	@Test
 	void protectedPostWithoutCsrfTokenStillRequiresJwtAuthentication() throws Exception {
 		mockMvc.perform(post("/api/v1/user"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+	}
+
+	@Test
+	void reservationCreationEndpointRequiresAuthentication() throws Exception {
+		mockMvc.perform(post("/api/v1/reservations"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+	}
+
+	@Test
+	void userReservationsEndpointRequiresAuthentication() throws Exception {
+		mockMvc.perform(get("/api/v1/user/reservations"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+	}
+
+	@Test
+	void reservationCancelEndpointRequiresAuthentication() throws Exception {
+		mockMvc.perform(delete("/api/v1/reservations/1"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));

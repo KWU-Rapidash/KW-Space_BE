@@ -38,6 +38,13 @@ public class SecurityConfig {
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.GET, "/api/health", "/api/health/").permitAll()
 						.requestMatchers(HttpMethod.HEAD, "/api/health", "/api/health/").permitAll()
+						.requestMatchers(
+								HttpMethod.GET,
+								"/api/v1/classrooms",
+								"/api/v1/classrooms/",
+								"/api/v1/classrooms/*/times",
+								"/api/v1/classrooms/*/times/"
+						).permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						.requestMatchers(
 								HttpMethod.POST,
