@@ -85,6 +85,10 @@ public class User {
 		this.phoneNumber = phoneNumber;
 	}
 
+	public void changePasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
 	public Long getId() {
 		return id;
 	}
