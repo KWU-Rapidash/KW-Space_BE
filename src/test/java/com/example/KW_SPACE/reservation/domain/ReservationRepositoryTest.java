@@ -123,7 +123,9 @@ class ReservationRepositoryTest {
 		assertThat(reservationRepository.findByClassroomIdInAndDateAndStatus(
 				java.util.List.of(classroom.getId(), other.getId()), DATE, ReservationStatus.RESERVED))
 				.hasSize(2)
-				.allSatisfy(reservation -> assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RESERVED));
+				.allSatisfy(reservation -> assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RESERVED))
+				.extracting(reservation -> reservation.getClassroom().getId())
+				.containsExactlyInAnyOrder(classroom.getId(), other.getId());
 	}
 
 	@Test
