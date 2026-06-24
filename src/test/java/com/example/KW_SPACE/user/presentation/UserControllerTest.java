@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
 import com.example.KW_SPACE.auth.security.CustomUserDetailsService;
+import com.example.KW_SPACE.config.AuthCookieConfig;
 import com.example.KW_SPACE.config.SecurityConfig;
 import com.example.KW_SPACE.user.application.UserNotFoundException;
 import com.example.KW_SPACE.user.application.UserService;
@@ -22,7 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(UserController.class)
-@Import({SecurityConfig.class, AuthErrorResponseWriter.class})
+@Import({SecurityConfig.class, AuthCookieConfig.class, AuthErrorResponseWriter.class})
 class UserControllerTest {
 
 	@Autowired
