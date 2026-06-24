@@ -68,7 +68,7 @@ class UserControllerTest {
 	}
 
 	@Test
-	void getMyInfoReturnsNotFoundWhenUserDoesNotExist() throws Exception {
+	void getMyInfoReturnsUnauthorizedWhenAuthenticatedUserDoesNotExist() throws Exception {
 		CustomUserDetails userDetails = authenticatedUserDetails(1L);
 		given(userService.getMyInfo(1L))
 				.willThrow(new UserNotFoundException("2022202015"));
