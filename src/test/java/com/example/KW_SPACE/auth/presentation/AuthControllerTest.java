@@ -139,6 +139,23 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void signupReturnsBadRequestWhenRequiredFieldIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/signup")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "name": " ",
+								  "klasId": "2025404000",
+								  "klasPassword": "valid-klas-password",
+								  "password": "service-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
 	void signupReturnsUnprocessableContentWhenPasswordIsTooShort() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/signup")
 						.with(csrf())
@@ -216,6 +233,21 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void loginReturnsBadRequestWhenPasswordIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/login")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "password": " "
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
 	void passwordResetReturnsSuccessResponse() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/password-reset")
 						.with(csrf())
@@ -242,6 +274,22 @@ class AuthControllerTest {
 						.content("""
 								{
 								  "klasId": "2025404000",
+								  "newPassword": "new-service-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void passwordResetReturnsBadRequestWhenKlasPasswordIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/password-reset")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": " ",
 								  "newPassword": "new-service-password"
 								}
 								"""))
