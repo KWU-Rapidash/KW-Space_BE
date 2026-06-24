@@ -84,10 +84,6 @@ public class OpenApiConfig {
 						field("startTime", "예약 시작 시간"),
 						field("endTime", "예약 종료 시간")),
 					reservationCreateResponses()))
-				.addPathItem("/api/v1/classrooms/{classroomId}/times", get("Reserve", "강의실 예약 가능 시간 조회",
-					"특정 강의실의 날짜별 시간대 예약 가능 여부를 조회한다.",
-					List.of(classroomIdPathParameter(), queryParameter("date", "조회 날짜")),
-					arrayResponse("ClassroomTimeAvailabilityList", classroomTimeAvailability())))
 				.addPathItem("/api/v1/classrooms", get("Reserve", "특정 날짜/층의 전체 강의실 조회",
 					"특정 날짜와 층의 예약 가능/불가 강의실 목록을 조회한다.",
 					List.of(queryParameter("floor", "층"), queryParameter("date", "조회 날짜")),
@@ -271,15 +267,6 @@ public class OpenApiConfig {
 		return new Parameter().in("path").required(true).name(name).description(description).schema(new StringSchema());
 	}
 
-	private static Parameter classroomIdPathParameter() {
-		return new Parameter()
-			.in("path")
-			.required(true)
-			.name("classroomId")
-			.description("강의실 식별자. 현재는 saebit-{호실} 형식이며, 추후 {건물명}-{호실} 형식으로 확장한다.")
-			.schema(classroomIdSchema());
-	}
-
 	private static Parameter queryParameter(String name, String description) {
 		return new Parameter().in("query").required(true).name(name).description(description).schema(new StringSchema());
 	}
@@ -329,7 +316,7 @@ public class OpenApiConfig {
 
 	private static Schema<?> classroomTimeAvailability() {
 		return object("ClassroomTimeAvailabilityResponse",
-			new StringSchema().name("time").description("시간대"),
+			new StringSchema().name("time").description("시간대").example("09:00~10:30"),
 			new BooleanSchema().name("available").description("예약 가능 여부"));
 	}
 
@@ -338,7 +325,16 @@ public class OpenApiConfig {
 			classroomIdSchema().name("classroomId"),
 			new IntegerSchema().name("floor").description("층"),
 			new StringSchema().name("classroomNumber").description("강의실 번호"),
-			new BooleanSchema().name("available").description("예약 가능 여부"));
+			new BooleanSchema().name("available").description("강의실 단위 예약 가능 여부(슬롯 1개 이상 가용 시 true)"),
+			classroomTimes());
+	}
+
+	private static Schema<?> classroomTimes() {
+		ArraySchema times = new ArraySchema();
+		times.name("times");
+		times.description("슬롯별 예약 가능 여부");
+		times.items(classroomTimeAvailability());
+		return times;
 	}
 
 	private static StringSchema classroomIdSchema() {

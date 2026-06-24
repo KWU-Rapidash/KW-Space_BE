@@ -1,5 +1,6 @@
 package com.example.KW_SPACE.reservation.domain;
 
+import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

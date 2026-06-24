@@ -71,13 +71,6 @@ class SecurityConfigTest {
 	}
 
 	@Test
-	void classroomTimesEndpointIsPublic() throws Exception {
-		mockMvc.perform(get("/api/v1/classrooms/1/times")
-						.param("date", "2024-04-01"))
-				.andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
-	}
-
-	@Test
 	void jsonLoginWithoutCsrfTokenReachesAuthController() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)

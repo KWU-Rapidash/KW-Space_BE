@@ -3,6 +3,7 @@ package com.example.KW_SPACE.reservation.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.user.domain.User;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -12,7 +13,7 @@ class ReservationTest {
 
 	private static final LocalDate DATE = LocalDate.of(2024, 4, 1);
 
-	private final Classroom classroom = Classroom.create(4, "401");
+	private final Classroom classroom = Classroom.create("saebit-401", 4, "401");
 	private final User user = User.create("2025404000", "이효원", null, "encoded-password");
 
 	@Test

@@ -8,9 +8,7 @@ public final class AuthPublicEndpoints {
 			"/api/health",
 			"/api/health/",
 			"/api/v1/classrooms",
-			"/api/v1/classrooms/",
-			"/api/v1/classrooms/*/times",
-			"/api/v1/classrooms/*/times/"
+			"/api/v1/classrooms/"
 	);
 	public static final List<String> PUBLIC_HEAD_PATHS = List.of("/api/health", "/api/health/");
 	public static final List<String> PUBLIC_POST_PATHS = List.of(

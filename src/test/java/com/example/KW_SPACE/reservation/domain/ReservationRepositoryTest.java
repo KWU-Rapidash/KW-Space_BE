@@ -2,6 +2,8 @@ package com.example.KW_SPACE.reservation.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.example.KW_SPACE.classroom.domain.Classroom;
+import com.example.KW_SPACE.classroom.domain.ClassroomRepository;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import java.time.LocalDate;
@@ -33,7 +35,7 @@ class ReservationRepositoryTest {
 
 	@BeforeEach
 	void setUp() {
-		classroom = classroomRepository.save(Classroom.create(4, "401"));
+		classroom = classroomRepository.save(Classroom.create("saebit-401", 4, "401"));
 		user = userRepository.save(User.create("2025404000", "이효원", "010-1234-5678", "encoded-password"));
 	}
 
@@ -100,10 +102,30 @@ class ReservationRepositoryTest {
 	@Test
 	void ignoresOtherClassroom() {
 		reserve(LocalTime.of(10, 30), LocalTime.of(11, 30));
-		Classroom otherClassroom = classroomRepository.save(Classroom.create(4, "402"));
+		Classroom otherClassroom = classroomRepository.save(Classroom.create("saebit-402", 4, "402"));
 
 		assertThat(reservationRepository.existsOverlappingReservation(
 				otherClassroom, DATE, LocalTime.of(10, 0), LocalTime.of(11, 0))).isFalse();
+	}
+
+	@Test
+	void findsReservedByClassroomIdsExcludingCanceledAndOtherClassrooms() {
+		Classroom other = classroomRepository.save(Classroom.create("saebit-402", 4, "402"));
+		Classroom outside = classroomRepository.save(Classroom.create("saebit-501", 5, "501"));
+
+		reserve(LocalTime.of(10, 0), LocalTime.of(11, 0));                                  // classroom, RESERVED
+		reserveCanceled(LocalTime.of(13, 0), LocalTime.of(14, 0));                          // classroom, CANCELED 제외
+		reservationRepository.saveAndFlush(
+				Reservation.create(other, user, DATE, LocalTime.of(9, 0), LocalTime.of(10, 0)));   // other, RESERVED
+		reservationRepository.saveAndFlush(
+				Reservation.create(outside, user, DATE, LocalTime.of(9, 0), LocalTime.of(10, 0))); // 미포함 강의실 제외
+
+		assertThat(reservationRepository.findByClassroomIdInAndDateAndStatus(
+				java.util.List.of(classroom.getId(), other.getId()), DATE, ReservationStatus.RESERVED))
+				.hasSize(2)
+				.allSatisfy(reservation -> assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RESERVED))
+				.extracting(reservation -> reservation.getClassroom().getId())
+				.containsExactlyInAnyOrder(classroom.getId(), other.getId());
 	}
 
 	@Test

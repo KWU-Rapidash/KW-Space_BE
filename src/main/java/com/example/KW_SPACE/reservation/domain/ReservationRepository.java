@@ -1,7 +1,9 @@
 package com.example.KW_SPACE.reservation.domain;
 
+import com.example.KW_SPACE.classroom.domain.Classroom;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,6 +27,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 			@Param("endTime") LocalTime endTime);
 
 	List<Reservation> findByClassroomIdAndDateAndStatus(Long classroomId, LocalDate date, ReservationStatus status);
+
+	List<Reservation> findByClassroomIdInAndDateAndStatus(
+			Collection<Long> classroomIds, LocalDate date, ReservationStatus status);
 
 	List<Reservation> findByUserId(Long userId);
 
