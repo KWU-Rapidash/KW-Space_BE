@@ -71,6 +71,9 @@ public class Reservation {
 	}
 
 	public static Reservation create(Classroom classroom, User user, LocalDate date, LocalTime startTime, LocalTime endTime) {
+		if (classroom == null || user == null || date == null || startTime == null || endTime == null) {
+			throw new IllegalArgumentException("예약 필수 정보는 null일 수 없습니다.");
+		}
 		if (!endTime.isAfter(startTime)) {
 			throw new IllegalArgumentException("예약 종료 시각은 시작 시각보다 늦어야 합니다.");
 		}
