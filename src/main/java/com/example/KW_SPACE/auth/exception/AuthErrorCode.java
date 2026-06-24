@@ -7,6 +7,7 @@ public enum AuthErrorCode {
 	AUTH_INVALID_KLAS_CREDENTIALS(HttpStatus.UNAUTHORIZED, "KLAS 인증 정보가 일치하지 않습니다."),
 	AUTH_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 일치하지 않습니다."),
 	AUTH_DUPLICATED_KLAS_ID(HttpStatus.CONFLICT, "이미 가입된 학번입니다."),
+	AUTH_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
 	AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
 	AUTH_EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "인증 토큰이 만료되었습니다."),
 	AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),

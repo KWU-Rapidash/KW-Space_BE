@@ -89,6 +89,11 @@ public class User {
 		this.passwordHash = passwordHash;
 	}
 
+	public void resetPassword(String passwordHash) {
+		changePasswordHash(passwordHash);
+		this.tokenVersion++;
+	}
+
 	public Long getId() {
 		return id;
 	}
