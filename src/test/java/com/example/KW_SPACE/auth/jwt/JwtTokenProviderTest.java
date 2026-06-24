@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 class JwtTokenProviderTest {
 
 	private static final String SECRET = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+	private static final String DIFFERENT_SECRET = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
 	private static final Instant NOW = Instant.parse("2026-06-24T00:00:00Z");
 	private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
@@ -97,6 +98,30 @@ class JwtTokenProviderTest {
 	}
 
 	@Test
+	void rejectsBlankToken() {
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(" "))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenSignedWithDifferentSecret() {
+		SecretKey differentSecretKey = Keys.hmacShaKeyFor(DIFFERENT_SECRET.getBytes(StandardCharsets.UTF_8));
+		String token = Jwts.builder()
+				.subject("1")
+				.claim("role", UserRole.USER.name())
+				.claim("tokenVersion", 0)
+				.issuedAt(Date.from(NOW))
+				.expiration(Date.from(NOW.plus(Duration.ofHours(1))))
+				.signWith(differentSecretKey)
+				.compact();
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
 	void rejectsTokenWithoutExpiration() {
 		SecretKey secretKey = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 		String token = Jwts.builder()
@@ -110,6 +135,78 @@ class JwtTokenProviderTest {
 		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
 				.isInstanceOfSatisfying(AuthException.class, exception ->
 						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenWithoutSubject() {
+		String token = tokenWithClaims(null, UserRole.USER.name(), 0);
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenWithNonNumericSubject() {
+		String token = tokenWithClaims("not-a-number", UserRole.USER.name(), 0);
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenWithoutRole() {
+		String token = tokenWithClaims("1", null, 0);
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenWithUnknownRole() {
+		String token = tokenWithClaims("1", "UNKNOWN", 0);
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenWithoutTokenVersion() {
+		String token = tokenWithClaims("1", UserRole.USER.name(), null);
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	@Test
+	void rejectsTokenWithNonIntegerTokenVersion() {
+		String token = tokenWithClaims("1", UserRole.USER.name(), "not-a-version");
+
+		assertThatThrownBy(() -> jwtTokenProvider.parseAccessToken(token))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN));
+	}
+
+	private String tokenWithClaims(String subject, String role, Object tokenVersion) {
+		SecretKey secretKey = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+		var builder = Jwts.builder()
+				.issuedAt(Date.from(NOW))
+				.expiration(Date.from(NOW.plus(Duration.ofHours(1))));
+		if (subject != null) {
+			builder.subject(subject);
+		}
+		if (role != null) {
+			builder.claim("role", role);
+		}
+		if (tokenVersion != null) {
+			builder.claim("tokenVersion", tokenVersion);
+		}
+
+		return builder.signWith(secretKey).compact();
 	}
 
 	private void setUserId(User user, Long id) {

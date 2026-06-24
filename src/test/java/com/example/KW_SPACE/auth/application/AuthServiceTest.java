@@ -63,6 +63,23 @@ class AuthServiceTest {
 	}
 
 	@Test
+	void signupFallsBackToRequestNameWhenKlasNameIsBlank() {
+		SignupRequest request = new SignupRequest("요청이름", "2025404000", "valid-klas-password", "service-password");
+		given(userRepository.existsByKlasId("2025404000")).willReturn(false);
+		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
+				.willReturn(KlasAuthResult.success("2025404000", " "));
+		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
+		given(userRepository.saveAndFlush(any(User.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+		SignupResponse response = authService.signup(request);
+
+		ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+		verify(userRepository).saveAndFlush(userCaptor.capture());
+		assertThat(userCaptor.getValue().getName()).isEqualTo("요청이름");
+		assertThat(response.username()).isEqualTo("요청이름");
+	}
+
+	@Test
 	void signupRejectsDuplicatedKlasIdBeforeKlasVerification() {
 		SignupRequest request = new SignupRequest("이효원", "2025404000", "valid-klas-password", "service-password");
 		given(userRepository.existsByKlasId("2025404000")).willReturn(true);
@@ -97,6 +114,24 @@ class AuthServiceTest {
 		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
 		given(userRepository.saveAndFlush(any(User.class)))
 				.willThrow(new DataIntegrityViolationException("constraint [uk_users_klas_id]"));
+
+		assertThatThrownBy(() -> authService.signup(request))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_DUPLICATED_KLAS_ID));
+	}
+
+	@Test
+	void signupMapsNestedDuplicateConstraintViolationToDuplicatedKlasId() {
+		SignupRequest request = new SignupRequest("요청이름", "2025404000", "valid-klas-password", "service-password");
+		given(userRepository.existsByKlasId("2025404000")).willReturn(false);
+		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
+				.willReturn(KlasAuthResult.success("2025404000", "이효원"));
+		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
+		given(userRepository.saveAndFlush(any(User.class)))
+				.willThrow(new DataIntegrityViolationException(
+						"could not execute statement",
+						new RuntimeException("duplicate key violates constraint [uk_users_klas_id]")
+				));
 
 		assertThatThrownBy(() -> authService.signup(request))
 				.isInstanceOfSatisfying(AuthException.class, exception ->
