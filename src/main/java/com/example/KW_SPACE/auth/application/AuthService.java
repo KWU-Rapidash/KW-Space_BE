@@ -11,6 +11,7 @@ import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupResponse;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
+import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
+
+	private static final String KLAS_ID_UNIQUE_CONSTRAINT = "uk_users_klas_id";
 
 	private final UserRepository userRepository;
 	private final KlasAuthClient klasAuthClient;
@@ -66,8 +69,24 @@ public class AuthService {
 		try {
 			return userRepository.saveAndFlush(User.create(klasId, name, null, passwordHash));
 		} catch (DataIntegrityViolationException exception) {
-			throw new AuthException(AuthErrorCode.AUTH_DUPLICATED_KLAS_ID);
+			if (isDuplicatedKlasIdViolation(exception)) {
+				throw new AuthException(AuthErrorCode.AUTH_DUPLICATED_KLAS_ID);
+			}
+			throw exception;
 		}
+	}
+
+	private boolean isDuplicatedKlasIdViolation(DataIntegrityViolationException exception) {
+		Throwable current = exception;
+		while (current != null) {
+			String message = current.getMessage();
+			if (message != null
+					&& message.toLowerCase(Locale.ROOT).contains(KLAS_ID_UNIQUE_CONSTRAINT)) {
+				return true;
+			}
+			current = current.getCause();
+		}
+		return false;
 	}
 
 	private String resolveName(String requestName, String klasName) {

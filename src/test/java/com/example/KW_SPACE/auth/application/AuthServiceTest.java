@@ -95,11 +95,26 @@ class AuthServiceTest {
 				.willReturn(KlasAuthResult.success("2025404000", "이효원"));
 		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
 		given(userRepository.saveAndFlush(any(User.class)))
-				.willThrow(new DataIntegrityViolationException("duplicated klas id"));
+				.willThrow(new DataIntegrityViolationException("constraint [uk_users_klas_id]"));
 
 		assertThatThrownBy(() -> authService.signup(request))
 				.isInstanceOfSatisfying(AuthException.class, exception ->
 						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_DUPLICATED_KLAS_ID));
+	}
+
+	@Test
+	void signupRethrowsOtherConstraintViolation() {
+		SignupRequest request = new SignupRequest("요청이름", "2025404000", "valid-klas-password", "service-password");
+		DataIntegrityViolationException dataIntegrityViolationException =
+				new DataIntegrityViolationException("constraint [uk_users_phone_number]");
+		given(userRepository.existsByKlasId("2025404000")).willReturn(false);
+		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
+				.willReturn(KlasAuthResult.success("2025404000", "이효원"));
+		given(passwordEncoder.encode("service-password")).willReturn("encoded-service-password");
+		given(userRepository.saveAndFlush(any(User.class))).willThrow(dataIntegrityViolationException);
+
+		assertThatThrownBy(() -> authService.signup(request))
+				.isSameAs(dataIntegrityViolationException);
 	}
 
 	@Test
