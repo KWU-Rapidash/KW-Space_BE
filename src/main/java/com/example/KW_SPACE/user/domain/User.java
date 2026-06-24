@@ -85,6 +85,11 @@ public class User {
 		this.phoneNumber = phoneNumber;
 	}
 
+	public void resetPassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+		this.tokenVersion++;
+	}
+
 	public Long getId() {
 		return id;
 	}
