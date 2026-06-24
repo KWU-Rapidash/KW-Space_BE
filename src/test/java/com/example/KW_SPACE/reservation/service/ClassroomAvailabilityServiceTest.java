@@ -1,14 +1,17 @@
 package com.example.KW_SPACE.reservation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.example.KW_SPACE.classroom.domain.Classroom;
 import com.example.KW_SPACE.classroom.domain.ClassroomRepository;
+import com.example.KW_SPACE.classroom.exception.ClassroomNotFoundException;
 import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.reservation.domain.ReservationStatus;
 import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
+import com.example.KW_SPACE.reservation.dto.TimeSlotResponse;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -98,5 +101,55 @@ class ClassroomAvailabilityServiceTest {
 
 		assertThat(result).extracting(ClassroomAvailabilityResponse::roomNumber).containsExactly("401", "402");
 		assertThat(result).extracting(ClassroomAvailabilityResponse::available).containsExactly(true, false);
+	}
+
+	@Test
+	void returnsAllTenSlotsWithAvailabilityForClassroom() {
+		when(classroomRepository.existsById(1L)).thenReturn(true);
+		when(reservationRepository.findByClassroomIdAndDateAndStatus(1L, DATE, ReservationStatus.RESERVED))
+				.thenReturn(List.of(reservation(classroom(1L, "401"), LocalTime.of(9, 0), LocalTime.of(10, 30))));
+
+		List<TimeSlotResponse> result = classroomAvailabilityService.findTimes(1L, DATE);
+
+		assertThat(result).hasSize(10);
+		assertThat(result.get(0).available()).isFalse(); // 09:00~10:30 예약됨
+		assertThat(result.get(1).available()).isTrue();  // 10:30~12:00 가능
+	}
+
+	@Test
+	void blocksOnlySlotsOverlappingReservation() {
+		when(classroomRepository.existsById(1L)).thenReturn(true);
+		// 10:30~13:30 예약: slot[1](10:30~12:00), slot[2](12:00~13:30) 두 슬롯만 차단
+		when(reservationRepository.findByClassroomIdAndDateAndStatus(1L, DATE, ReservationStatus.RESERVED))
+				.thenReturn(List.of(reservation(classroom(1L, "401"), LocalTime.of(10, 30), LocalTime.of(13, 30))));
+
+		List<TimeSlotResponse> result = classroomAvailabilityService.findTimes(1L, DATE);
+
+		assertThat(result.get(0).available()).isTrue();  // 09:00~10:30 경계 인접, 비차단
+		assertThat(result.get(1).available()).isFalse(); // 10:30~12:00
+		assertThat(result.get(2).available()).isFalse(); // 12:00~13:30
+		assertThat(result.get(3).available()).isTrue();  // 13:30~15:00 경계 인접, 비차단
+	}
+
+	@Test
+	void blocksSlotsAcrossNinetyAndSixtyMinutePolicyBoundary() {
+		when(classroomRepository.existsById(1L)).thenReturn(true);
+		// 16:30~19:00 예약: slot[5](16:30~18:00, 90분), slot[6](18:00~19:00, 60분) 모두 차단
+		when(reservationRepository.findByClassroomIdAndDateAndStatus(1L, DATE, ReservationStatus.RESERVED))
+				.thenReturn(List.of(reservation(classroom(1L, "401"), LocalTime.of(16, 30), LocalTime.of(19, 0))));
+
+		List<TimeSlotResponse> result = classroomAvailabilityService.findTimes(1L, DATE);
+
+		assertThat(result.get(5).available()).isFalse(); // 16:30~18:00
+		assertThat(result.get(6).available()).isFalse(); // 18:00~19:00
+		assertThat(result.get(7).available()).isTrue();  // 19:00~20:00
+	}
+
+	@Test
+	void throwsWhenClassroomDoesNotExist() {
+		when(classroomRepository.existsById(99L)).thenReturn(false);
+
+		assertThatThrownBy(() -> classroomAvailabilityService.findTimes(99L, DATE))
+				.isInstanceOf(ClassroomNotFoundException.class);
 	}
 }
