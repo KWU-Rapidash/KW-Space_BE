@@ -56,7 +56,16 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.responses['409']").exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.responses['422']").exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.summary").value("비밀번호 재설정"))
+			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.security").doesNotExist())
+			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.requestBody.content['application/json'].schema.properties.klasId")
+				.exists())
+			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.requestBody.content['application/json'].schema.properties.klasPassword")
+				.exists())
+			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.requestBody.content['application/json'].schema.properties.newPassword")
+				.exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.responses['404']").exists())
+			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.responses['422']").exists())
+			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.responses['503']").exists())
 			.andExpect(jsonPath("$.paths['/api/v1/reservations'].post.summary").value("강의실 예약"))
 			.andExpect(jsonPath("$.paths['/api/v1/reservations'].post.requestBody.content['application/json'].schema.properties.classroomId.example")
 				.value("saebit-101"))
@@ -103,7 +112,8 @@ class OpenApiConfigTest {
 				.doesNotExist())
 			.andExpect(jsonPath("$.paths['/api/v1/user'].get.security[0].accessTokenCookie").exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/login'].post.security").doesNotExist())
-			.andExpect(jsonPath("$.paths['/api/auth/login']").doesNotExist());
+			.andExpect(jsonPath("$.paths['/api/auth/login']").doesNotExist())
+			.andExpect(jsonPath("$.paths['/api/auth/password-reset']").doesNotExist());
 	}
 
 	@Test
