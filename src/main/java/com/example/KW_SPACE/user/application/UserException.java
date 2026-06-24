@@ -7,7 +7,7 @@ public class UserException extends RuntimeException {
 	private final UserErrorCode errorCode;
 
 	public UserException(UserErrorCode errorCode) {
-		super(Objects.requireNonNull(errorCode).getMessage());
+		super(Objects.requireNonNull(errorCode, "errorCode must not be null").getMessage());
 		this.errorCode = errorCode;
 	}
 

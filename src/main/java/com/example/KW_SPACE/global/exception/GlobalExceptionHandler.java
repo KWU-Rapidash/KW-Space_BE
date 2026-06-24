@@ -24,11 +24,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(UserException.class)
 	public ResponseEntity<AuthErrorResponse> handleUserException(UserException exception) {
-		UserErrorCode errorCode = exception.getErrorCode();
-
-		return ResponseEntity
-				.status(errorCode.getStatus())
-				.body(new AuthErrorResponse(errorCode.name(), errorCode.getMessage()));
+		return toResponse(exception.getErrorCode());
 	}
 
 	@ExceptionHandler(KlasAuthServerUnavailableException.class)
@@ -75,6 +71,12 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(errorCode.getStatus())
 				.body(AuthErrorResponse.from(errorCode));
+	}
+
+	private ResponseEntity<AuthErrorResponse> toResponse(UserErrorCode errorCode) {
+		return ResponseEntity
+				.status(errorCode.getStatus())
+				.body(new AuthErrorResponse(errorCode.name(), errorCode.getMessage()));
 	}
 
 	@ExceptionHandler(UserNotFoundException.class)

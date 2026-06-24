@@ -1,7 +1,9 @@
 package com.example.KW_SPACE.user.presentation;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -176,6 +178,98 @@ class UserControllerTest {
 								"""))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+
+		verifyNoInteractions(userService);
+	}
+
+	@Test
+	void updatePasswordReturnsSuccess() throws Exception {
+		CustomUserDetails userDetails = authenticatedUserDetails(1L);
+
+		mockMvc.perform(patch("/api/v1/user/password")
+						.with(user(userDetails))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "currentPassword": "current-password",
+								  "newPassword": "new-password"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("비밀번호 수정에 성공했습니다."));
+
+		verify(userService).updatePassword(1L, "current-password", "new-password");
+	}
+
+	@Test
+	void updatePasswordReturnsBadRequestWhenCurrentPasswordMismatches() throws Exception {
+		CustomUserDetails userDetails = authenticatedUserDetails(1L);
+		willThrow(new UserException(UserErrorCode.USER_CURRENT_PASSWORD_MISMATCH))
+				.given(userService)
+				.updatePassword(1L, "wrong-password", "new-password");
+
+		mockMvc.perform(patch("/api/v1/user/password")
+						.with(user(userDetails))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "currentPassword": "wrong-password",
+								  "newPassword": "new-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("USER_CURRENT_PASSWORD_MISMATCH"))
+				.andExpect(jsonPath("$.message").value("현재 비밀번호가 일치하지 않습니다."));
+	}
+
+	@Test
+	void updatePasswordRequiresAuthentication() throws Exception {
+		mockMvc.perform(patch("/api/v1/user/password")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "currentPassword": "current-password",
+								  "newPassword": "new-password"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+
+		verifyNoInteractions(userService);
+	}
+
+	@Test
+	void updatePasswordReturnsBadRequestWhenRequiredFieldIsMissing() throws Exception {
+		mockMvc.perform(patch("/api/v1/user/password")
+						.with(user(authenticatedUserDetails(1L)))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "currentPassword": " ",
+								  "newPassword": "new-password"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+
+		verifyNoInteractions(userService);
+	}
+
+	@Test
+	void updatePasswordReturnsUnprocessableContentWhenNewPasswordIsTooShort() throws Exception {
+		mockMvc.perform(patch("/api/v1/user/password")
+						.with(user(authenticatedUserDetails(1L)))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "currentPassword": "current-password",
+								  "newPassword": "short"
+								}
+								"""))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("AUTH_PASSWORD_POLICY_VIOLATION"));
 
 		verifyNoInteractions(userService);
 	}
