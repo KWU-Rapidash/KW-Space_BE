@@ -51,7 +51,7 @@ class ClassroomAvailabilityServiceTest {
 	}
 
 	private Classroom classroom(long id, String roomNumber) {
-		Classroom classroom = Classroom.create(4, roomNumber);
+		Classroom classroom = Classroom.create("saebit-" + roomNumber, 4, roomNumber);
 		ReflectionTestUtils.setField(classroom, "id", id);
 		return classroom;
 	}
@@ -160,7 +160,7 @@ class ClassroomAvailabilityServiceTest {
 
 		List<ClassroomAvailabilityResponse> result = classroomAvailabilityService.findAvailability(4, DATE);
 
-		assertThat(result).extracting(ClassroomAvailabilityResponse::roomNumber).containsExactly("401", "402");
+		assertThat(result).extracting(ClassroomAvailabilityResponse::classroomNumber).containsExactly("401", "402");
 		assertThat(times(result.get(0))).anyMatch(TimeSlotResponse::available);  // 401 가용 슬롯 있음
 		assertThat(times(result.get(1))).noneMatch(TimeSlotResponse::available); // 402 풀부킹
 	}

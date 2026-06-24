@@ -13,6 +13,6 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
 	List<Classroom> findByFloorOrderByRoomNumberAsc(int floor);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@Query("select c from Classroom c where c.id = :id")
-	Optional<Classroom> findByIdForUpdate(@Param("id") Long id);
+	@Query("select c from Classroom c where c.code = :code")
+	Optional<Classroom> findByCodeForUpdate(@Param("code") String code);
 }

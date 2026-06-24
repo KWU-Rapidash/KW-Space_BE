@@ -16,7 +16,6 @@ import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
 import com.example.KW_SPACE.reservation.dto.TimeSlotResponse;
 import com.example.KW_SPACE.reservation.service.ClassroomAvailabilityService;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,16 +45,17 @@ class ClassroomAvailabilityControllerTest {
 	@Test
 	void returnsClassroomAvailabilityAsJson() throws Exception {
 		when(classroomAvailabilityService.findAvailability(eq(2), any(LocalDate.class))).thenReturn(List.of(
-				new ClassroomAvailabilityResponse(1L, 2, "201", List.of(
-						new TimeSlotResponse(LocalTime.of(9, 0), LocalTime.of(10, 30), true),
-						new TimeSlotResponse(LocalTime.of(10, 30), LocalTime.of(12, 0), false)))));
+				new ClassroomAvailabilityResponse("saebit-201", 2, "201", true, List.of(
+						new TimeSlotResponse("09:00~10:30", true),
+						new TimeSlotResponse("10:30~12:00", false)))));
 
 		mockMvc.perform(get("/api/v1/classrooms").param("floor", "2").param("date", "2024-04-01"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(1))
-				.andExpect(jsonPath("$[0].roomNumber").value("201"))
-				.andExpect(jsonPath("$[0].times[0].start").value("09:00"))
-				.andExpect(jsonPath("$[0].times[0].end").value("10:30"))
+				.andExpect(jsonPath("$[0].classroomId").value("saebit-201"))
+				.andExpect(jsonPath("$[0].classroomNumber").value("201"))
+				.andExpect(jsonPath("$[0].available").value(true))
+				.andExpect(jsonPath("$[0].times[0].time").value("09:00~10:30"))
 				.andExpect(jsonPath("$[0].times[0].available").value(true))
 				.andExpect(jsonPath("$[0].times[1].available").value(false));
 	}

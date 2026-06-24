@@ -1,15 +1,14 @@
 package com.example.KW_SPACE.reservation.dto;
 
 import com.example.KW_SPACE.reservation.domain.TimeSlot;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
-public record TimeSlotResponse(
-		@JsonFormat(pattern = "HH:mm") LocalTime start,
-		@JsonFormat(pattern = "HH:mm") LocalTime end,
-		boolean available) {
+public record TimeSlotResponse(String time, boolean available) {
+
+	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
 	public static TimeSlotResponse of(TimeSlot slot, boolean available) {
-		return new TimeSlotResponse(slot.getStartTime(), slot.getEndTime(), available);
+		String time = slot.getStartTime().format(TIME_FORMAT) + "~" + slot.getEndTime().format(TIME_FORMAT);
+		return new TimeSlotResponse(time, available);
 	}
 }
