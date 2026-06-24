@@ -7,6 +7,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
+import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
+import com.example.KW_SPACE.auth.security.CustomUserDetailsService;
+import com.example.KW_SPACE.config.AuthCookieConfig;
 import com.example.KW_SPACE.config.SecurityConfig;
 import com.example.KW_SPACE.reservation.dto.ClassroomAvailabilityResponse;
 import com.example.KW_SPACE.reservation.dto.TimeSlotResponse;
@@ -23,7 +27,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ClassroomAvailabilityController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, AuthCookieConfig.class, AuthErrorResponseWriter.class})
 @WithMockUser
 class ClassroomAvailabilityControllerTest {
 
@@ -32,6 +36,12 @@ class ClassroomAvailabilityControllerTest {
 
 	@MockitoBean
 	private ClassroomAvailabilityService classroomAvailabilityService;
+
+	@MockitoBean
+	private JwtTokenProvider jwtTokenProvider;
+
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
 
 	@Test
 	void returnsClassroomAvailabilityAsJson() throws Exception {
