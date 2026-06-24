@@ -28,7 +28,7 @@ public class ClassroomAvailabilityController {
 
 	@GetMapping
 	public List<ClassroomAvailabilityResponse> getClassrooms(
-			@RequestParam @Min(1) @Max(9) int floor,
+			@RequestParam @Min(1) @Max(2) int floor,
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 		return classroomAvailabilityService.findAvailability(floor, date);
 	}

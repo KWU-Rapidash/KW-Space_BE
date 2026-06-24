@@ -45,15 +45,15 @@ class ClassroomAvailabilityControllerTest {
 
 	@Test
 	void returnsClassroomAvailabilityAsJson() throws Exception {
-		when(classroomAvailabilityService.findAvailability(eq(4), any(LocalDate.class))).thenReturn(List.of(
-				new ClassroomAvailabilityResponse(1L, 4, "401", List.of(
+		when(classroomAvailabilityService.findAvailability(eq(2), any(LocalDate.class))).thenReturn(List.of(
+				new ClassroomAvailabilityResponse(1L, 2, "201", List.of(
 						new TimeSlotResponse(LocalTime.of(9, 0), LocalTime.of(10, 30), true),
 						new TimeSlotResponse(LocalTime.of(10, 30), LocalTime.of(12, 0), false)))));
 
-		mockMvc.perform(get("/api/v1/classrooms").param("floor", "4").param("date", "2024-04-01"))
+		mockMvc.perform(get("/api/v1/classrooms").param("floor", "2").param("date", "2024-04-01"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(1))
-				.andExpect(jsonPath("$[0].roomNumber").value("401"))
+				.andExpect(jsonPath("$[0].roomNumber").value("201"))
 				.andExpect(jsonPath("$[0].times[0].start").value("09:00"))
 				.andExpect(jsonPath("$[0].times[0].end").value("10:30"))
 				.andExpect(jsonPath("$[0].times[0].available").value(true))
@@ -62,9 +62,9 @@ class ClassroomAvailabilityControllerTest {
 
 	@Test
 	void returnsOkWhenFloorIsAtMaxBoundary() throws Exception {
-		when(classroomAvailabilityService.findAvailability(eq(9), any(LocalDate.class))).thenReturn(List.of());
+		when(classroomAvailabilityService.findAvailability(eq(2), any(LocalDate.class))).thenReturn(List.of());
 
-		mockMvc.perform(get("/api/v1/classrooms").param("floor", "9").param("date", "2024-04-01"))
+		mockMvc.perform(get("/api/v1/classrooms").param("floor", "2").param("date", "2024-04-01"))
 				.andExpect(status().isOk());
 	}
 
@@ -82,7 +82,7 @@ class ClassroomAvailabilityControllerTest {
 
 	@Test
 	void returnsBadRequestWhenFloorExceedsMax() throws Exception {
-		mockMvc.perform(get("/api/v1/classrooms").param("floor", "10").param("date", "2024-04-01"))
+		mockMvc.perform(get("/api/v1/classrooms").param("floor", "3").param("date", "2024-04-01"))
 				.andExpect(status().isBadRequest());
 	}
 
@@ -94,13 +94,13 @@ class ClassroomAvailabilityControllerTest {
 
 	@Test
 	void returnsBadRequestWhenDateIsMissing() throws Exception {
-		mockMvc.perform(get("/api/v1/classrooms").param("floor", "4"))
+		mockMvc.perform(get("/api/v1/classrooms").param("floor", "2"))
 				.andExpect(status().isBadRequest());
 	}
 
 	@Test
 	void returnsBadRequestWhenDateIsInvalid() throws Exception {
-		mockMvc.perform(get("/api/v1/classrooms").param("floor", "4").param("date", "not-a-date"))
+		mockMvc.perform(get("/api/v1/classrooms").param("floor", "2").param("date", "not-a-date"))
 				.andExpect(status().isBadRequest());
 	}
 }
