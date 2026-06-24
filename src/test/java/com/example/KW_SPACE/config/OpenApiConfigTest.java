@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,6 +23,9 @@ class OpenApiConfigTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Value("${spring.application.version:0.0.1-SNAPSHOT}")
+	private String applicationVersion;
+
 	@Test
 	void openApiDocsArePublicAndExposeServiceInfo() throws Exception {
 		mockMvc.perform(get("/v3/api-docs"))
@@ -29,7 +33,7 @@ class OpenApiConfigTest {
 			.andExpect(content().contentTypeCompatibleWith("application/json"))
 			.andExpect(jsonPath("$.info.title").value("KW-Space API"))
 			.andExpect(jsonPath("$.info.description").value("새빛관 대여 시스템 Backend API"))
-			.andExpect(jsonPath("$.info.version").value("0.0.1-SNAPSHOT"))
+			.andExpect(jsonPath("$.info.version").value(applicationVersion))
 			.andExpect(jsonPath("$.components.securitySchemes.accessTokenCookie.in").value("cookie"))
 			.andExpect(jsonPath("$.components.securitySchemes.accessTokenCookie.name").value("accessToken"))
 			.andExpect(jsonPath("$.paths['/api/health'].get.summary").value("헬스체크"))
