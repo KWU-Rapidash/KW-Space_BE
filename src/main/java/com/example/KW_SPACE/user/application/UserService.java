@@ -6,7 +6,6 @@ import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
-import java.util.List;
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -69,14 +68,10 @@ public class UserService {
 
 	@Transactional
 	public void withdraw(Long userId) {
-		User user = userRepository.findById(userId)
+		User user = userRepository.findByIdForUpdate(userId)
 				.orElseThrow(() -> new UserNotFoundException(String.valueOf(userId)));
 
-		List<Reservation> reservations = reservationRepository.findByUserId(userId);
-		if (!reservations.isEmpty()) {
-			reservationRepository.deleteAllInBatch(reservations);
-		}
-
+		reservationRepository.deleteByUserId(userId);
 		userRepository.delete(user);
 		userRepository.flush();
 	}

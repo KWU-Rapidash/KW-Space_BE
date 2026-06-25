@@ -9,13 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -159,36 +157,32 @@ class UserServiceTest {
     @Test
     void withdrawDeletesUserAndReservations() {
         User user = User.create("2025404000", "tester", null, "encoded-password");
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(reservationRepository.findByUserId(1L)).willReturn(List.of());
+        given(userRepository.findByIdForUpdate(1L)).willReturn(Optional.of(user));
 
         userService.withdraw(1L);
 
-        verify(reservationRepository).findByUserId(1L);
+        verify(reservationRepository).deleteByUserId(1L);
         verify(userRepository).delete(user);
         verify(userRepository).flush();
     }
 
     @Test
-    void withdrawDeletesReservationsBeforeUserWhenReservationsExist() {
+    void withdrawLocksUserBeforeDeletingReservations() {
         User user = User.create("2025404000", "tester", null, "encoded-password");
-        Reservation reservation = mock(Reservation.class);
-        List<Reservation> reservations = List.of(reservation);
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(reservationRepository.findByUserId(1L)).willReturn(reservations);
+        given(userRepository.findByIdForUpdate(1L)).willReturn(Optional.of(user));
 
         userService.withdraw(1L);
 
-        InOrder inOrder = inOrder(reservationRepository, userRepository);
-        inOrder.verify(reservationRepository).findByUserId(1L);
-        inOrder.verify(reservationRepository).deleteAllInBatch(reservations);
+        InOrder inOrder = inOrder(userRepository, reservationRepository);
+        inOrder.verify(userRepository).findByIdForUpdate(1L);
+        inOrder.verify(reservationRepository).deleteByUserId(1L);
         inOrder.verify(userRepository).delete(user);
         inOrder.verify(userRepository).flush();
     }
 
     @Test
     void withdrawThrowsExceptionWhenUserDoesNotExist() {
-        given(userRepository.findById(1L)).willReturn(Optional.empty());
+        given(userRepository.findByIdForUpdate(1L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.withdraw(1L))
                 .isInstanceOf(UserNotFoundException.class);

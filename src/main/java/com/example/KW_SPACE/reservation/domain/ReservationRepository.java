@@ -6,6 +6,7 @@ import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,6 +33,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 			Collection<Long> classroomIds, LocalDate date, ReservationStatus status);
 
 	List<Reservation> findByUserId(Long userId);
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("delete from Reservation r where r.user.id = :userId")
+	int deleteByUserId(@Param("userId") Long userId);
 
 	List<Reservation> findByUserIdAndStatus(Long userId, ReservationStatus status);
 
