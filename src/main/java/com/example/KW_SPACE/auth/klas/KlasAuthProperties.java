@@ -34,8 +34,13 @@ public record KlasAuthProperties(
 		if (readTimeout.isZero() || readTimeout.isNegative()) {
 			throw new IllegalArgumentException("KLAS read timeout must be positive");
 		}
-		if (selectYearhakgi != null && selectYearhakgi.isBlank()) {
-			selectYearhakgi = null;
+		if (selectYearhakgi != null) {
+			selectYearhakgi = selectYearhakgi.trim();
+			if (selectYearhakgi.isBlank()) {
+				selectYearhakgi = null;
+			} else if (!selectYearhakgi.matches("\\d{4},[12]")) {
+				throw new IllegalArgumentException("selectYearhakgi must be in format yyyy,1 or yyyy,2");
+			}
 		}
 	}
 

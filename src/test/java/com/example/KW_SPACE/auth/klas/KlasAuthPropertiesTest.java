@@ -57,11 +57,32 @@ class KlasAuthPropertiesTest {
 				URI.create("https://klas.example.test"),
 				Duration.ofSeconds(1),
 				Duration.ofSeconds(1),
-				"2025,2"
+				" 2025,2 "
 		);
 
 		assertThat(derived.resolveSelectYearhakgi(firstSemester)).isEqualTo("2026,1");
 		assertThat(derived.resolveSelectYearhakgi(secondSemester)).isEqualTo("2026,2");
 		assertThat(configured.resolveSelectYearhakgi(firstSemester)).isEqualTo("2025,2");
+	}
+
+	@Test
+	void rejectsMalformedYearSemester() {
+		assertThatThrownBy(() -> new KlasAuthProperties(
+				URI.create("https://klas.example.test"),
+				Duration.ofSeconds(1),
+				Duration.ofSeconds(1),
+				"2026,3"
+		))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("selectYearhakgi must be in format yyyy,1 or yyyy,2");
+
+		assertThatThrownBy(() -> new KlasAuthProperties(
+				URI.create("https://klas.example.test"),
+				Duration.ofSeconds(1),
+				Duration.ofSeconds(1),
+				"current"
+		))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("selectYearhakgi must be in format yyyy,1 or yyyy,2");
 	}
 }
