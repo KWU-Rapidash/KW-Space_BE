@@ -9,6 +9,7 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Clock;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,11 +48,12 @@ public class RealKlasAuthClient implements KlasAuthClient {
 		try {
 			LoginSecurity loginSecurity = requestLoginSecurity();
 			String loginToken = createLoginToken(klasId, klasPassword, loginSecurity.publicKey());
-			if (!confirmLogin(loginToken, loginSecurity.cookieHeader())) {
+			LoginConfirm loginConfirm = confirmLogin(loginToken, loginSecurity.cookieHeader());
+			if (!loginConfirm.authenticated()) {
 				return KlasAuthResult.failure();
 			}
 
-			return requestStudentInfo(klasId, loginSecurity.cookieHeader());
+			return requestStudentInfo(klasId, loginConfirm.cookieHeader());
 		} catch (KlasAuthServerUnavailableException exception) {
 			throw exception;
 		} catch (GeneralSecurityException | JsonProcessingException | IllegalArgumentException
@@ -100,21 +102,22 @@ public class RealKlasAuthClient implements KlasAuthClient {
 		return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
 	}
 
-	private boolean confirmLogin(String loginToken, String cookieHeader) {
-		LoginConfirmResponse response = restClient.post()
+	private LoginConfirm confirmLogin(String loginToken, String cookieHeader) {
+		ResponseEntity<LoginConfirmResponse> responseEntity = restClient.post()
 				.uri(LOGIN_CONFIRM_PATH)
 				.contentType(JSON_UTF8)
 				.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN, MediaType.ALL)
 				.header(HttpHeaders.COOKIE, cookieHeader)
 				.body(new LoginConfirmRequest(loginToken, "", ""))
 				.retrieve()
-				.body(LoginConfirmResponse.class);
+				.toEntity(LoginConfirmResponse.class);
 
+		LoginConfirmResponse response = responseEntity.getBody();
 		if (response == null) {
 			throw serverUnavailable();
 		}
 		if (response.errorCount() != null && response.errorCount() > 0) {
-			return false;
+			return new LoginConfirm(false, cookieHeader);
 		}
 		if (!Boolean.FALSE.equals(response.loginRequired())
 				|| !Objects.equals(response.errorCount(), 0)
@@ -123,7 +126,7 @@ public class RealKlasAuthClient implements KlasAuthClient {
 			throw serverUnavailable();
 		}
 
-		return true;
+		return new LoginConfirm(true, mergeCookieHeaders(cookieHeader, responseEntity.getHeaders().get(HttpHeaders.SET_COOKIE)));
 	}
 
 	private KlasAuthResult requestStudentInfo(String requestedKlasId, String cookieHeader) {
@@ -138,7 +141,7 @@ public class RealKlasAuthClient implements KlasAuthClient {
 				.retrieve()
 				.body(StudentInfoResponse[].class);
 
-		if (response == null || response.length == 0) {
+		if (response == null || response.length == 0 || response[0] == null) {
 			throw serverUnavailable();
 		}
 
@@ -163,6 +166,38 @@ public class RealKlasAuthClient implements KlasAuthClient {
 				.collect(Collectors.joining("; "));
 	}
 
+	private String mergeCookieHeaders(String cookieHeader, List<String> setCookieHeaders) {
+		String updatedCookieHeader = toCookieHeader(setCookieHeaders);
+		if (!StringUtils.hasText(updatedCookieHeader)) {
+			return cookieHeader;
+		}
+
+		Map<String, String> cookies = new LinkedHashMap<>();
+		putCookiePairs(cookies, cookieHeader);
+		putCookiePairs(cookies, updatedCookieHeader);
+		return String.join("; ", cookies.values());
+	}
+
+	private void putCookiePairs(Map<String, String> cookies, String cookieHeader) {
+		if (!StringUtils.hasText(cookieHeader)) {
+			return;
+		}
+
+		for (String cookiePair : cookieHeader.split(";")) {
+			String trimmedCookiePair = cookiePair.trim();
+			if (!StringUtils.hasText(trimmedCookiePair)) {
+				continue;
+			}
+
+			String[] nameAndValue = trimmedCookiePair.split("=", 2);
+			if (!StringUtils.hasText(nameAndValue[0])) {
+				continue;
+			}
+
+			cookies.put(nameAndValue[0], trimmedCookiePair);
+		}
+	}
+
 	private static String toCookiePair(String setCookieHeader) {
 		if (!StringUtils.hasText(setCookieHeader)) {
 			return "";
@@ -180,6 +215,9 @@ public class RealKlasAuthClient implements KlasAuthClient {
 	}
 
 	private record LoginSecurity(String publicKey, String cookieHeader) {
+	}
+
+	private record LoginConfirm(boolean authenticated, String cookieHeader) {
 	}
 
 	private record LoginSecurityResponse(String publicKey) {

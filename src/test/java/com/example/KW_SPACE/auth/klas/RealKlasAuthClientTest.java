@@ -40,6 +40,8 @@ class RealKlasAuthClientTest {
 	private static final String KLAS_PASSWORD = "<student-password>";
 	private static final String STUDENT_NAME = "<student-name>";
 	private static final String COOKIE_HEADER = "JSESSIONID=<session-cookie>; WMONID=<wmonid>";
+	private static final String CONFIRMED_COOKIE_HEADER =
+			"JSESSIONID=<session-cookie>; WMONID=<confirmed-wmonid>; KLASSESSION=<confirmed-session>";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final Clock clock = Clock.fixed(Instant.parse("2026-03-01T00:00:00Z"), ZoneId.of("Asia/Seoul"));
@@ -66,7 +68,7 @@ class RealKlasAuthClientTest {
 		expectLoginConfirmSuccess();
 		server.expect(requestTo(BASE_URL + "/std/cps/inqire/ToeicInfoStd.do"))
 				.andExpect(method(POST))
-				.andExpect(header(COOKIE, COOKIE_HEADER))
+				.andExpect(header(COOKIE, CONFIRMED_COOKIE_HEADER))
 				.andExpect(content().json("""
 						{"selectYearhakgi":"2026,1","selectChangeYn":"Y"}
 						"""))
@@ -141,6 +143,22 @@ class RealKlasAuthClientTest {
 		server.verify();
 	}
 
+	@Test
+	void throwsServerUnavailableWhenStudentInfoFirstRowIsNull() {
+		expectLoginSecurity();
+		expectLoginConfirmSuccess();
+		server.expect(requestTo(BASE_URL + "/std/cps/inqire/ToeicInfoStd.do"))
+				.andRespond(withSuccess("""
+						[null]
+						""", APPLICATION_JSON));
+
+		assertThatThrownBy(() -> client.verify(KLAS_ID, KLAS_PASSWORD))
+				.isInstanceOf(KlasAuthServerUnavailableException.class)
+				.hasMessage("KLAS authentication server is unavailable")
+				.hasMessageNotContaining(KLAS_PASSWORD);
+		server.verify();
+	}
+
 	private void expectLoginSecurity() {
 		server.expect(requestTo(BASE_URL + "/usr/cmn/login/LoginSecurity.do"))
 				.andExpect(method(POST))
@@ -163,7 +181,9 @@ class RealKlasAuthClientTest {
 						  "errorCount": 0,
 						  "response": {"userId": "<klas-user-id>"}
 						}
-						""", APPLICATION_JSON));
+						""", APPLICATION_JSON)
+						.header(SET_COOKIE, "WMONID=<confirmed-wmonid>; Path=/")
+						.header(SET_COOKIE, "KLASSESSION=<confirmed-session>; Path=/; HttpOnly"));
 	}
 
 	private RequestMatcher encryptedLoginTokenPayload() {
