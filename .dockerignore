@@ -1,0 +1,5 @@
+*
+!Dockerfile
+!build/
+!build/libs/
+!build/libs/KW-SPACE-0.0.1-SNAPSHOT.jar
