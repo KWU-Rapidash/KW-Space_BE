@@ -9,10 +9,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Build and Deploy to EC2
     runs-on: ubuntu-latest
+    env:
+      EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
 
     steps:
       - name: Checkout
@@ -36,14 +42,15 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/kw-space.pem
           chmod 600 ~/.ssh/kw-space.pem
-          ssh-keyscan -p "${{ secrets.EC2_PORT }}" "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Upload boot jar
         shell: bash
         run: |
           scp -P "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
             build/libs/KW-SPACE-0.0.1-SNAPSHOT.jar \
-            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/ubuntu/KW-Space_BE/build/libs/KW-SPACE-0.0.1-SNAPSHOT.jar"
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${EC2_APP_DIR}/build/libs/KW-SPACE-0.0.1-SNAPSHOT.jar"
 
       - name: Restart application
         shell: bash
