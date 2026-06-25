@@ -49,6 +49,9 @@ jobs:
       - name: Upload boot jar
         shell: bash
         run: |
+          ssh -p "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p \"${EC2_APP_DIR}/build/libs\""
           scp -P "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
             build/libs/KW-SPACE-0.0.1-SNAPSHOT.jar \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${EC2_APP_DIR}/build/libs/KW-SPACE-0.0.1-SNAPSHOT.jar"
