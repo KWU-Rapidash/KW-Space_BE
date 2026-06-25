@@ -45,6 +45,31 @@ jobs:
             .
           docker save kw-space:${{ github.sha }} | gzip > kw-space-image.tar.gz
 
+      - name: Create deployment env file
+        shell: bash
+        env:
+          JWT_SECRET: ${{ secrets.KW_SPACE_AUTH_JWT_SECRET }}
+          JWT_ACCESS_TOKEN_TTL: ${{ secrets.KW_SPACE_AUTH_JWT_ACCESS_TOKEN_TTL }}
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          for name in JWT_SECRET DB_URL DB_USERNAME DB_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required secret: ${name}"
+              exit 1
+            fi
+          done
+
+          {
+            printf 'SPRING_PROFILES_ACTIVE=prod\n'
+            printf 'KW_SPACE_AUTH_JWT_SECRET=%s\n' "${JWT_SECRET}"
+            printf 'KW_SPACE_AUTH_JWT_ACCESS_TOKEN_TTL=%s\n' "${JWT_ACCESS_TOKEN_TTL:-1h}"
+            printf 'DB_URL=%s\n' "${DB_URL}"
+            printf 'DB_USERNAME=%s\n' "${DB_USERNAME}"
+            printf 'DB_PASSWORD=%s\n' "${DB_PASSWORD}"
+          } > deploy.env
+
       - name: Set up SSH key
         shell: bash
         run: |
@@ -54,7 +79,7 @@ jobs:
           echo "${{ secrets.EC2_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Upload Docker image
+      - name: Upload Docker image and env file
         shell: bash
         run: |
           ssh -p "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
@@ -63,6 +88,12 @@ jobs:
           scp -P "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
             kw-space-image.tar.gz \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${EC2_APP_DIR}/kw-space-image.tar.gz"
+          scp -P "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
+            deploy.env \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${EC2_APP_DIR}/.env"
+          ssh -p "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
+            "chmod 600 \"${EC2_APP_DIR}/.env\""
 
       - name: Restart Docker container
         shell: bash
