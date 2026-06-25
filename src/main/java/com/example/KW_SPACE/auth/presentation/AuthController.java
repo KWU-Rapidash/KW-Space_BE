@@ -3,6 +3,8 @@ package com.example.KW_SPACE.auth.presentation;
 import com.example.KW_SPACE.auth.application.AuthService;
 import com.example.KW_SPACE.auth.application.LoginResult;
 import com.example.KW_SPACE.auth.cookie.AuthCookieService;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyRequest;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyResponse;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.LogoutResponse;
@@ -36,6 +38,11 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public SignupResponse signup(@Valid @RequestBody SignupRequest request) {
 		return authService.signup(request);
+	}
+
+	@PostMapping("/klas/verify")
+	public KlasVerifyResponse verifyKlasAccount(@Valid @RequestBody KlasVerifyRequest request) {
+		return authService.verifyKlasAccount(request);
 	}
 
 	@PostMapping("/login")

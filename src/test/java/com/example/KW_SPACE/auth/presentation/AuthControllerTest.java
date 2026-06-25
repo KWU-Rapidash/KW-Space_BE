@@ -19,6 +19,8 @@ import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyRequest;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyResponse;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.PasswordResetRequest;
@@ -170,6 +172,71 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.code").value("AUTH_PASSWORD_POLICY_VIOLATION"));
+	}
+
+	@Test
+	void klasVerifyReturnsVerifiedKlasInfo() throws Exception {
+		given(authService.verifyKlasAccount(any(KlasVerifyRequest.class)))
+				.willReturn(new KlasVerifyResponse("2025404000", "이효원", "KLAS 인증에 성공했습니다."));
+
+		mockMvc.perform(post("/api/v1/auth/klas/verify")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": "valid-klas-password"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith("application/json"))
+				.andExpect(jsonPath("$.klasId").value("2025404000"))
+				.andExpect(jsonPath("$.name").value("이효원"))
+				.andExpect(jsonPath("$.message").value("KLAS 인증에 성공했습니다."));
+	}
+
+	@Test
+	void klasVerifyReturnsBadRequestWhenRequiredFieldIsMissing() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/klas/verify")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void klasVerifyReturnsBadRequestWhenKlasPasswordIsBlank() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/klas/verify")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": " "
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
+	}
+
+	@Test
+	void klasVerifyReturnsUnauthorizedWhenKlasCredentialsAreInvalid() throws Exception {
+		given(authService.verifyKlasAccount(any(KlasVerifyRequest.class)))
+				.willThrow(new AuthException(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS));
+
+		mockMvc.perform(post("/api/v1/auth/klas/verify")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "klasId": "2025404000",
+								  "klasPassword": "wrong-klas-password"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_KLAS_CREDENTIALS"))
+				.andExpect(jsonPath("$.message").value("KLAS 인증 정보가 일치하지 않습니다."));
 	}
 
 	@Test

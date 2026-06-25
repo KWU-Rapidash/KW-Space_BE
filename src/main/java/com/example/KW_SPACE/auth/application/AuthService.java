@@ -5,6 +5,8 @@ import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
 import com.example.KW_SPACE.auth.klas.KlasAuthClient;
 import com.example.KW_SPACE.auth.klas.KlasAuthResult;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyRequest;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyResponse;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.LoginResponse;
 import com.example.KW_SPACE.auth.presentation.dto.PasswordResetRequest;
@@ -51,6 +53,19 @@ public class AuthService {
 		User user = saveUser(request.klasId(), name, passwordHash);
 
 		return SignupResponse.from(user);
+	}
+
+	public KlasVerifyResponse verifyKlasAccount(KlasVerifyRequest request) {
+		KlasAuthResult klasAuthResult = klasAuthClient.verify(request.klasId(), request.klasPassword());
+		if (!klasAuthResult.authenticated()) {
+			throw new AuthException(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS);
+		}
+
+		return new KlasVerifyResponse(
+				klasAuthResult.klasId(),
+				klasAuthResult.name(),
+				"KLAS 인증에 성공했습니다."
+		);
 	}
 
 	@Transactional(readOnly = true)

@@ -14,6 +14,8 @@ import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
 import com.example.KW_SPACE.auth.klas.KlasAuthClient;
 import com.example.KW_SPACE.auth.klas.KlasAuthResult;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyRequest;
+import com.example.KW_SPACE.auth.presentation.dto.KlasVerifyResponse;
 import com.example.KW_SPACE.auth.presentation.dto.LoginRequest;
 import com.example.KW_SPACE.auth.presentation.dto.PasswordResetRequest;
 import com.example.KW_SPACE.auth.presentation.dto.SignupRequest;
@@ -151,6 +153,35 @@ class AuthServiceTest {
 
 		assertThatThrownBy(() -> authService.signup(request))
 				.isSameAs(dataIntegrityViolationException);
+	}
+
+	@Test
+	void verifyKlasAccountReturnsVerifiedKlasInfoWithoutUserPersistence() {
+		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
+				.willReturn(KlasAuthResult.success("2025404000", "이효원"));
+
+		KlasVerifyResponse response = authService.verifyKlasAccount(
+				new KlasVerifyRequest("2025404000", "valid-klas-password")
+		);
+
+		assertThat(response.klasId()).isEqualTo("2025404000");
+		assertThat(response.name()).isEqualTo("이효원");
+		assertThat(response.message()).isEqualTo("KLAS 인증에 성공했습니다.");
+		verifyNoInteractions(userRepository, passwordEncoder, jwtTokenProvider);
+	}
+
+	@Test
+	void verifyKlasAccountRejectsInvalidKlasCredentials() {
+		given(klasAuthClient.verify("2025404000", "wrong-klas-password"))
+				.willReturn(KlasAuthResult.failure());
+
+		assertThatThrownBy(() -> authService.verifyKlasAccount(
+				new KlasVerifyRequest("2025404000", "wrong-klas-password")
+		))
+				.isInstanceOfSatisfying(AuthException.class, exception ->
+						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS));
+
+		verifyNoInteractions(userRepository, passwordEncoder, jwtTokenProvider);
 	}
 
 	@Test
