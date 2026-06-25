@@ -71,6 +71,12 @@ public class OpenApiConfig {
 						field("klasPassword", "KLAS 인증용 비밀번호"),
 						field("password", "서비스 로그인 비밀번호")),
 					signupResponses()))
+				.addPathItem("/api/v1/auth/klas/verify", postWithResponses("Auth", "KLAS 계정 검증",
+					"회원가입과 별개로 학번과 KLAS 비밀번호의 유효성을 검증한다. 서비스 계정은 생성하지 않는다.",
+					object("KlasVerifyRequest",
+						field("klasId", "학번"),
+						field("klasPassword", "KLAS 인증용 비밀번호")),
+					klasVerifyResponses()))
 				.addPathItem("/api/v1/auth/password-reset", postWithResponses("Auth", "비밀번호 재설정", "KLAS 인증 후 서비스 비밀번호를 재설정한다.",
 					object("PasswordResetRequest",
 						field("klasId", "학번"),
@@ -221,6 +227,11 @@ public class OpenApiConfig {
 			.addApiResponse("422", new ApiResponse().description("입력값 형식 오류"));
 	}
 
+	private static ApiResponses klasVerifyResponses() {
+		return ok("KlasVerifyResponse", klasVerifyResponse())
+			.addApiResponse("503", new ApiResponse().description("KLAS 서버를 사용할 수 없음"));
+	}
+
 	private static ApiResponses passwordResetResponses() {
 		return ok("PasswordResetResponse", messageResponse("PasswordResetResponse", "비밀번호 재설정 성공 여부"))
 			.addApiResponse("404", new ApiResponse().description("사용자를 찾을 수 없음"))
@@ -284,6 +295,13 @@ public class OpenApiConfig {
 		return object(name,
 			new BooleanSchema().name("success").description("성공 여부"),
 			new StringSchema().name("message").description(message));
+	}
+
+	private static Schema<?> klasVerifyResponse() {
+		return object("KlasVerifyResponse",
+			new StringSchema().name("klasId").description("KLAS에서 확인한 학번"),
+			new StringSchema().name("name").description("KLAS에서 확인한 이름"),
+			new StringSchema().name("message").description("KLAS 계정 검증 결과 메시지"));
 	}
 
 	private static Schema<?> reservationResponse() {
