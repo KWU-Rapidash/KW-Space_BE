@@ -88,26 +88,84 @@ jobs:
               | cut -d= -f2- \
               || true
           )"
-          SPRING_PROFILE="${SPRING_PROFILE:-local}"
+          if [ -z "${SPRING_PROFILE}" ]; then
+            echo "Missing spring profile in ${EC2_APP_DIR}/.env."
+            echo "Set SPRING_PROFILES_ACTIVE=prod or spring.profiles.active=prod."
+            exit 1
+          fi
+          if [ "${SPRING_PROFILE}" != "prod" ]; then
+            echo "Production deployment requires SPRING_PROFILES_ACTIVE=prod."
+            exit 1
+          fi
+
           DOCKER_ENV_FILE="${EC2_APP_DIR}/.docker.env"
           grep -v -E '^(SPRING_PROFILES_ACTIVE|spring.profiles.active)=' "${EC2_APP_DIR}/.env" > "${DOCKER_ENV_FILE}" || true
           printf 'SPRING_PROFILES_ACTIVE=%s\n' "${SPRING_PROFILE}" >> "${DOCKER_ENV_FILE}"
 
           gunzip -c "${EC2_APP_DIR}/kw-space-image.tar.gz" | sudo docker load
-          sudo docker stop kw-space || true
-          sudo docker rm kw-space || true
+          sudo docker rm -f kw-space-next || true
+          sudo docker rm -f kw-space-rollback || true
+
           sudo docker run -d \
-            --name kw-space \
-            --restart unless-stopped \
+            --name kw-space-next \
             --env-file "${DOCKER_ENV_FILE}" \
-            -p 8080:8080 \
+            -p 18080:8080 \
             "${IMAGE_TAG}"
 
-          sleep 10
-          if ! curl --fail --silent --show-error http://localhost:8080/api/health; then
-            sudo docker logs --tail 200 kw-space
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://localhost:18080/api/health; then
+              break
+            fi
+            if [ "${attempt}" -eq 30 ]; then
+              sudo docker logs --tail 200 kw-space-next
+              sudo docker rm -f kw-space-next
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if sudo docker inspect kw-space >/dev/null 2>&1; then
+            sudo docker rename kw-space kw-space-rollback
+            sudo docker stop kw-space-rollback
+          fi
+
+          if ! sudo docker run -d \
+              --name kw-space \
+              --restart unless-stopped \
+              --env-file "${DOCKER_ENV_FILE}" \
+              -p 8080:8080 \
+              "${IMAGE_TAG}"; then
+            if sudo docker inspect kw-space-rollback >/dev/null 2>&1; then
+              sudo docker start kw-space-rollback
+              sudo docker rename kw-space-rollback kw-space
+            fi
             exit 1
           fi
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://localhost:8080/api/health; then
+              break
+            fi
+            if [ "${attempt}" -eq 30 ]; then
+              sudo docker logs --tail 200 kw-space
+              sudo docker rm -f kw-space
+              if sudo docker inspect kw-space-rollback >/dev/null 2>&1; then
+                sudo docker start kw-space-rollback
+                sudo docker rename kw-space-rollback kw-space
+              fi
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if sudo docker inspect kw-space-rollback >/dev/null 2>&1; then
+            sudo docker rm -f kw-space-rollback
+          fi
+
+          sudo docker rm -f kw-space-next
           sudo docker ps --filter name=kw-space
-          sudo docker image prune --force
+          sudo docker images kw-space --format '{{.Repository}}:{{.Tag}}' \
+            | grep -v -F "${IMAGE_TAG}" \
+            | grep -v -F 'kw-space:latest' \
+            | xargs -r sudo docker rmi || true
           EOF
