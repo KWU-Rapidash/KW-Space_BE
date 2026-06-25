@@ -102,6 +102,7 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.paths['/api/v1/user'].get.responses['200'].content['application/json'].schema.properties.message")
 				.exists())
 			.andExpect(jsonPath("$.paths['/api/v1/user'].delete.summary").value("회원 탈퇴"))
+			.andExpect(jsonPath("$.paths['/api/v1/user'].delete.requestBody").doesNotExist())
 			.andExpect(jsonPath("$.paths['/api/v1/user/password'].patch.summary").value("내 비밀번호 수정"))
 			.andExpect(jsonPath("$.paths['/api/v1/user/phone'].patch.summary").value("내 전화번호 수정"))
 			.andExpect(jsonPath("$.paths['/api/v1/user/phone'].patch.responses['200'].content['application/json'].schema.properties.phoneNumber")

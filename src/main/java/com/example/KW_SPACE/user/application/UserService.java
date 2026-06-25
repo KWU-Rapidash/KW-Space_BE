@@ -68,13 +68,9 @@ public class UserService {
 	}
 
 	@Transactional
-	public void withdraw(Long userId, String password) {
+	public void withdraw(Long userId) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(String.valueOf(userId)));
-
-		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-			throw new UserException(UserErrorCode.USER_CURRENT_PASSWORD_MISMATCH);
-		}
 
 		List<Reservation> reservations = reservationRepository.findByUserId(userId);
 		if (!reservations.isEmpty()) {

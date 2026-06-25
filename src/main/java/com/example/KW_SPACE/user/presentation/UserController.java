@@ -8,7 +8,6 @@ import com.example.KW_SPACE.user.presentation.dto.PasswordUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateRequest;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
-import com.example.KW_SPACE.user.presentation.dto.UserWithdrawalRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -57,10 +56,9 @@ public class UserController {
 
 	@DeleteMapping({"", "/"})
 	public ResponseEntity<Void> withdraw(
-			@AuthenticationPrincipal CustomUserDetails userDetails,
-			@Valid @RequestBody UserWithdrawalRequest request
+			@AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		userService.withdraw(userDetails.getId(), request.password());
+		userService.withdraw(userDetails.getId());
 
 		return ResponseEntity.noContent()
 				.header(HttpHeaders.SET_COOKIE, authCookieService.deleteAccessTokenCookie().toString())

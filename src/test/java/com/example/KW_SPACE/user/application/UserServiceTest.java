@@ -3,11 +3,13 @@ package com.example.KW_SPACE.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.example.KW_SPACE.reservation.domain.Reservation;
 import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
@@ -16,6 +18,7 @@ import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -154,40 +157,40 @@ class UserServiceTest {
     }
 
     @Test
-    void withdrawDeletesUserAndReservationsWhenPasswordMatches() {
+    void withdrawDeletesUserAndReservations() {
         User user = User.create("2025404000", "tester", null, "encoded-password");
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(passwordEncoder.matches("current-password", "encoded-password")).willReturn(true);
         given(reservationRepository.findByUserId(1L)).willReturn(List.of());
 
-        userService.withdraw(1L, "current-password");
+        userService.withdraw(1L);
 
-        verify(passwordEncoder).matches("current-password", "encoded-password");
         verify(reservationRepository).findByUserId(1L);
         verify(userRepository).delete(user);
         verify(userRepository).flush();
     }
 
     @Test
-    void withdrawRejectsMismatchedPassword() {
+    void withdrawDeletesReservationsBeforeUserWhenReservationsExist() {
         User user = User.create("2025404000", "tester", null, "encoded-password");
+        Reservation reservation = mock(Reservation.class);
+        List<Reservation> reservations = List.of(reservation);
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(passwordEncoder.matches("wrong-password", "encoded-password")).willReturn(false);
+        given(reservationRepository.findByUserId(1L)).willReturn(reservations);
 
-        assertThatThrownBy(() -> userService.withdraw(1L, "wrong-password"))
-                .isInstanceOfSatisfying(UserException.class, exception ->
-                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_CURRENT_PASSWORD_MISMATCH));
+        userService.withdraw(1L);
 
-        verify(passwordEncoder).matches("wrong-password", "encoded-password");
-        verifyNoMoreInteractions(passwordEncoder);
-        verifyNoInteractions(reservationRepository);
+        InOrder inOrder = inOrder(reservationRepository, userRepository);
+        inOrder.verify(reservationRepository).findByUserId(1L);
+        inOrder.verify(reservationRepository).deleteAllInBatch(reservations);
+        inOrder.verify(userRepository).delete(user);
+        inOrder.verify(userRepository).flush();
     }
 
     @Test
     void withdrawThrowsExceptionWhenUserDoesNotExist() {
         given(userRepository.findById(1L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.withdraw(1L, "current-password"))
+        assertThatThrownBy(() -> userService.withdraw(1L))
                 .isInstanceOf(UserNotFoundException.class);
     }
 }

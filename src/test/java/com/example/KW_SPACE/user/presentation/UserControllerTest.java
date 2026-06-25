@@ -294,65 +294,18 @@ class UserControllerTest {
 						.build());
 
 		mockMvc.perform(delete("/api/v1/user")
-						.with(user(userDetails))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "password": "current-password"
-								}
-								"""))
+						.with(user(userDetails)))
 				.andExpect(status().isNoContent())
 				.andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString("Max-Age=0")));
 
-		verify(userService).withdraw(1L, "current-password");
-	}
-
-	@Test
-	void withdrawReturnsBadRequestWhenPasswordMismatches() throws Exception {
-		CustomUserDetails userDetails = authenticatedUserDetails(1L);
-		willThrow(new UserException(UserErrorCode.USER_CURRENT_PASSWORD_MISMATCH))
-				.given(userService)
-				.withdraw(1L, "wrong-password");
-
-		mockMvc.perform(delete("/api/v1/user")
-						.with(user(userDetails))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "password": "wrong-password"
-								}
-								"""))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("USER_CURRENT_PASSWORD_MISMATCH"));
+		verify(userService).withdraw(1L);
 	}
 
 	@Test
 	void withdrawRequiresAuthentication() throws Exception {
-		mockMvc.perform(delete("/api/v1/user")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "password": "current-password"
-								}
-								"""))
+		mockMvc.perform(delete("/api/v1/user"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
-
-		verifyNoInteractions(userService);
-	}
-
-	@Test
-	void withdrawReturnsBadRequestWhenPasswordIsBlank() throws Exception {
-		mockMvc.perform(delete("/api/v1/user")
-						.with(user(authenticatedUserDetails(1L)))
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "password": " "
-								}
-								"""))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("AUTH_REQUIRED_FIELD_MISSING"));
 
 		verifyNoInteractions(userService);
 	}
