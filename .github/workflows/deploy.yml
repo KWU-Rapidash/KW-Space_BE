@@ -61,6 +61,15 @@ jobs:
             fi
           done
 
+          for name in JWT_SECRET JWT_ACCESS_TOKEN_TTL DB_URL DB_USERNAME DB_PASSWORD; do
+            value="${!name-}"
+            if [[ "${value}" == *$'\n'* || "${value}" == *$'\r'* ]]; then
+              echo "Secret ${name} must be a single line for Docker env-file format."
+              exit 1
+            fi
+          done
+
+          umask 077
           {
             printf 'SPRING_PROFILES_ACTIVE=prod\n'
             printf 'KW_SPACE_AUTH_JWT_SECRET=%s\n' "${JWT_SECRET}"
@@ -88,12 +97,9 @@ jobs:
           scp -P "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
             kw-space-image.tar.gz \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${EC2_APP_DIR}/kw-space-image.tar.gz"
-          scp -P "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
-            deploy.env \
-            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${EC2_APP_DIR}/.env"
           ssh -p "${{ secrets.EC2_PORT }}" -i ~/.ssh/kw-space.pem \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
-            "chmod 600 \"${EC2_APP_DIR}/.env\""
+            "rm -f \"${EC2_APP_DIR}/.env.tmp\" && umask 077 && cat > \"${EC2_APP_DIR}/.env.tmp\" && mv -f \"${EC2_APP_DIR}/.env.tmp\" \"${EC2_APP_DIR}/.env\"" < deploy.env
 
       - name: Restart Docker container
         shell: bash
@@ -130,6 +136,7 @@ jobs:
           fi
 
           DOCKER_ENV_FILE="${EC2_APP_DIR}/.docker.env"
+          install -m 600 /dev/null "${DOCKER_ENV_FILE}"
           grep -v -E '^(SPRING_PROFILES_ACTIVE|spring.profiles.active)=' "${EC2_APP_DIR}/.env" > "${DOCKER_ENV_FILE}" || true
           printf 'SPRING_PROFILES_ACTIVE=%s\n' "${SPRING_PROFILE}" >> "${DOCKER_ENV_FILE}"
 
