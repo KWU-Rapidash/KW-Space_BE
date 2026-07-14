@@ -55,6 +55,7 @@ class OpenApiConfigTest {
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.responses['201'].description").value("Created"))
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.responses['409']").exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.responses['422']").exists())
+			.andExpect(jsonPath("$.paths['/api/v1/auth/signup'].post.responses['503']").exists())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.summary").value("비밀번호 재설정"))
 			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.security").doesNotExist())
 			.andExpect(jsonPath("$.paths['/api/v1/auth/password-reset'].post.requestBody.content['application/json'].schema.properties.klasId")
