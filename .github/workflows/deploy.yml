@@ -67,6 +67,7 @@ jobs:
   deploy:
     name: Deploy with Docker Compose
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, ARM64, kw-space, rpi4]
     environment: production
     env:
