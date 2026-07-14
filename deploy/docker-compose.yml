@@ -6,7 +6,8 @@ services:
     container_name: kw-space-api
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        format: raw
     networks:
       - shared-db
     ports:
