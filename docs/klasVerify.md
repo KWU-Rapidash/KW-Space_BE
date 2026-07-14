@@ -76,6 +76,8 @@ Accept: application/json, text/plain, */*
 ```
 
 - payload JSON 문자열을 RSA PKCS#1 v1.5 padding으로 암호화한다.
+- payload는 공개키 modulus 기준 PKCS#1 v1.5 최대 평문 크기(`keyBytes - 11`) 이하여야 한다.
+- 최대 크기를 초과하면 KLAS 요청을 계속하지 않고 인증 실패로 처리한다.
 - 암호화 결과를 Base64 문자열로 만든다.
 - `klasPassword`와 생성된 `loginToken`은 로그, 예외 메시지, 테스트 fixture, JWT claim, DB에 저장하지 않는다.
 

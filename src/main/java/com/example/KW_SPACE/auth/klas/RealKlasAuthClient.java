@@ -2,10 +2,10 @@ package com.example.KW_SPACE.auth.klas;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
+import java.security.interfaces.RSAKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Clock;
 import java.util.Base64;
@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.crypto.Cipher;
 import org.springframework.http.HttpHeaders;
@@ -47,8 +48,11 @@ public class RealKlasAuthClient implements KlasAuthClient {
 	public KlasAuthResult verify(String klasId, String klasPassword) {
 		try {
 			LoginSecurity loginSecurity = requestLoginSecurity();
-			String loginToken = createLoginToken(klasId, klasPassword, loginSecurity.publicKey());
-			LoginConfirm loginConfirm = confirmLogin(loginToken, loginSecurity.cookieHeader());
+			Optional<String> loginToken = createLoginToken(klasId, klasPassword, loginSecurity.publicKey());
+			if (loginToken.isEmpty()) {
+				return KlasAuthResult.failure();
+			}
+			LoginConfirm loginConfirm = confirmLogin(loginToken.get(), loginSecurity.cookieHeader());
 			if (!loginConfirm.authenticated()) {
 				return KlasAuthResult.failure();
 			}
@@ -84,13 +88,27 @@ public class RealKlasAuthClient implements KlasAuthClient {
 		return new LoginSecurity(body.publicKey(), cookieHeader);
 	}
 
-	private String createLoginToken(String klasId, String klasPassword, String publicKey)
+	private Optional<String> createLoginToken(String klasId, String klasPassword, String publicKey)
 			throws GeneralSecurityException, JsonProcessingException {
-		String payload = objectMapper.writeValueAsString(new LoginTokenPayload(klasId, klasPassword, "N"));
+		byte[] payload = objectMapper.writeValueAsBytes(new LoginTokenPayload(klasId, klasPassword, "N"));
+		PublicKey encryptionKey = parsePublicKey(publicKey);
+		if (payload.length > maxPkcs1PayloadBytes(encryptionKey)) {
+			return Optional.empty();
+		}
+
 		Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		cipher.init(Cipher.ENCRYPT_MODE, parsePublicKey(publicKey));
-		byte[] encrypted = cipher.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-		return Base64.getEncoder().encodeToString(encrypted);
+		cipher.init(Cipher.ENCRYPT_MODE, encryptionKey);
+		byte[] encrypted = cipher.doFinal(payload);
+		return Optional.of(Base64.getEncoder().encodeToString(encrypted));
+	}
+
+	private int maxPkcs1PayloadBytes(PublicKey publicKey) throws GeneralSecurityException {
+		if (!(publicKey instanceof RSAKey rsaKey)) {
+			throw new GeneralSecurityException("KLAS public key is not an RSA key");
+		}
+
+		int modulusBytes = (rsaKey.getModulus().bitLength() + 7) / 8;
+		return modulusBytes - 11;
 	}
 
 	private PublicKey parsePublicKey(String publicKey) throws GeneralSecurityException {
