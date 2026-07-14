@@ -60,7 +60,7 @@ class AuthControllerTest {
 	@Test
 	void signupReturnsCreatedResponse() throws Exception {
 		given(authService.signup(any(SignupRequest.class)))
-				.willReturn(new SignupResponse("이효원", "2025404000", "회원가입에 성공했습니다."));
+				.willReturn(new SignupResponse(true, "회원가입에 성공했습니다."));
 
 		mockMvc.perform(post("/api/v1/auth/signup")
 						.with(csrf())
@@ -75,8 +75,9 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
-				.andExpect(jsonPath("$.username").value("이효원"))
-				.andExpect(jsonPath("$.klasId").value("2025404000"))
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.username").doesNotExist())
+				.andExpect(jsonPath("$.klasId").doesNotExist())
 				.andExpect(jsonPath("$.message").value("회원가입에 성공했습니다."));
 	}
 

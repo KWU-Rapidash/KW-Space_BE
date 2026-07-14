@@ -48,9 +48,9 @@ public class AuthService {
 
 		String passwordHash = passwordEncoder.encode(request.password());
 		String name = resolveName(request.name(), klasAuthResult.name());
-		User user = saveUser(request.klasId(), name, passwordHash);
+		saveUser(request.klasId(), name, passwordHash);
 
-		return SignupResponse.from(user);
+		return SignupResponse.created();
 	}
 
 	@Transactional(readOnly = true)

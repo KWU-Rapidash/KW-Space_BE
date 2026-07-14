@@ -57,8 +57,7 @@ class AuthServiceTest {
 		assertThat(savedUser.getKlasId()).isEqualTo("2025404000");
 		assertThat(savedUser.getName()).isEqualTo("이효원");
 		assertThat(savedUser.getPasswordHash()).isEqualTo("encoded-service-password");
-		assertThat(response.username()).isEqualTo("이효원");
-		assertThat(response.klasId()).isEqualTo("2025404000");
+		assertThat(response.success()).isTrue();
 		assertThat(response.message()).isEqualTo("회원가입에 성공했습니다.");
 	}
 
@@ -76,7 +75,7 @@ class AuthServiceTest {
 		ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
 		verify(userRepository).saveAndFlush(userCaptor.capture());
 		assertThat(userCaptor.getValue().getName()).isEqualTo("요청이름");
-		assertThat(response.username()).isEqualTo("요청이름");
+		assertThat(response.success()).isTrue();
 	}
 
 	@Test

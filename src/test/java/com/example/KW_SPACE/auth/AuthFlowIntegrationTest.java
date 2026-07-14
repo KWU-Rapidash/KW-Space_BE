@@ -68,10 +68,12 @@ class AuthFlowIntegrationTest {
 	void signupStoresEncodedPasswordHashWithoutPersistingKlasPassword() throws Exception {
 		mockMvc.perform(post("/api/v1/auth/signup")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(signupJson(KLAS_PASSWORD, SERVICE_PASSWORD)))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.username").value("테스트사용자"))
-				.andExpect(jsonPath("$.klasId").value(KLAS_ID));
+							.content(signupJson(KLAS_PASSWORD, SERVICE_PASSWORD)))
+					.andExpect(status().isCreated())
+					.andExpect(jsonPath("$.success").value(true))
+					.andExpect(jsonPath("$.message").value("회원가입에 성공했습니다."))
+					.andExpect(jsonPath("$.username").doesNotExist())
+					.andExpect(jsonPath("$.klasId").doesNotExist());
 
 		entityManager.clear();
 		User savedUser = findUser(KLAS_ID);
