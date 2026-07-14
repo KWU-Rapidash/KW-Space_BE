@@ -6,6 +6,7 @@ readonly COMPOSE_FILE="docker-compose.yml"
 readonly NEXT_ENV_FILE=".env.next"
 readonly ACTIVE_ENV_FILE=".env"
 readonly PREVIOUS_ENV_FILE=".env.previous"
+readonly SCHEMA_MARKER_FILE=".schema-initialized"
 
 if [[ ! -f "${COMPOSE_FILE}" ]]; then
   echo "Missing ${COMPOSE_FILE}."
@@ -43,6 +44,16 @@ if [[ -f "${ACTIVE_ENV_FILE}" ]]; then
 fi
 
 mv -f "${NEXT_ENV_FILE}" "${ACTIVE_ENV_FILE}"
+
+if [[ ! -f "${SCHEMA_MARKER_FILE}" ]]; then
+  echo "Bootstrapping the initial database schema."
+  docker compose --env-file "${ACTIVE_ENV_FILE}" run --rm \
+    -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
+    api \
+    --spring.main.web-application-type=none
+  touch "${SCHEMA_MARKER_FILE}"
+fi
+
 docker compose --env-file "${ACTIVE_ENV_FILE}" up -d --wait --wait-timeout 120
 
 rm -f "${PREVIOUS_ENV_FILE}"

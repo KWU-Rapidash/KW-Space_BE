@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    networks:
+      - shared-db
     ports:
       - "127.0.0.1:3002:8080"
     healthcheck:
@@ -18,3 +20,8 @@ services:
     security_opt:
       - no-new-privileges:true
     stop_grace_period: 20s
+
+networks:
+  shared-db:
+    external: true
+    name: shared-db
