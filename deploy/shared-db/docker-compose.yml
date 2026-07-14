@@ -6,7 +6,8 @@ services:
     container_name: shared-mysql
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        format: raw
     command:
       - --innodb-buffer-pool-size=256M
       - --max-connections=50
