@@ -71,6 +71,7 @@ jobs:
     environment: production
     env:
       APP_DIR: /home/ubuntu/apps/kw-space
+      SHARED_DB_DIR: /home/ubuntu/apps/shared-db
 
     steps:
       - name: Checkout deployment files
@@ -83,18 +84,18 @@ jobs:
         env:
           JWT_SECRET: ${{ secrets.KW_SPACE_AUTH_JWT_SECRET }}
           JWT_ACCESS_TOKEN_TTL: ${{ secrets.KW_SPACE_AUTH_JWT_ACCESS_TOKEN_TTL }}
-          DB_URL: ${{ secrets.DB_URL }}
+          DB_ROOT_PASSWORD: ${{ secrets.SHARED_DB_ROOT_PASSWORD }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          for name in JWT_SECRET DB_URL DB_USERNAME DB_PASSWORD; do
+          for name in JWT_SECRET DB_ROOT_PASSWORD DB_USERNAME DB_PASSWORD; do
             if [[ -z "${!name}" ]]; then
               echo "Missing required secret: ${name}"
               exit 1
             fi
           done
 
-          for name in JWT_SECRET JWT_ACCESS_TOKEN_TTL DB_URL DB_USERNAME DB_PASSWORD; do
+          for name in JWT_SECRET JWT_ACCESS_TOKEN_TTL DB_ROOT_PASSWORD DB_USERNAME DB_PASSWORD; do
             value="${!name-}"
             if [[ "${value}" == *$'\n'* || "${value}" == *$'\r'* ]]; then
               echo "Secret ${name} must be a single line for Docker env-file format."
@@ -108,18 +109,36 @@ jobs:
             printf 'SPRING_PROFILES_ACTIVE=prod\n'
             printf 'KW_SPACE_AUTH_JWT_SECRET=%s\n' "${JWT_SECRET}"
             printf 'KW_SPACE_AUTH_JWT_ACCESS_TOKEN_TTL=%s\n' "${JWT_ACCESS_TOKEN_TTL:-1h}"
-            printf 'DB_URL=%s\n' "${DB_URL}"
+            printf 'DB_URL=jdbc:mysql://shared-mysql:3306/kw_space?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul\n'
             printf 'DB_USERNAME=%s\n' "${DB_USERNAME}"
             printf 'DB_PASSWORD=%s\n' "${DB_PASSWORD}"
           } > "${RUNNER_TEMP}/kw-space.env"
 
+          {
+            printf 'MYSQL_ROOT_PASSWORD=%s\n' "${DB_ROOT_PASSWORD}"
+            printf 'MYSQL_DATABASE=kw_space\n'
+            printf 'MYSQL_USER=%s\n' "${DB_USERNAME}"
+            printf 'MYSQL_PASSWORD=%s\n' "${DB_PASSWORD}"
+          } > "${RUNNER_TEMP}/shared-db.env"
+
       - name: Install deployment files
         shell: bash
         run: |
+          install -d -m 700 "${SHARED_DB_DIR}"
+          install -m 644 deploy/shared-db/docker-compose.yml "${SHARED_DB_DIR}/docker-compose.yml"
+          install -m 600 "${RUNNER_TEMP}/shared-db.env" "${SHARED_DB_DIR}/.env"
+
           install -d -m 700 "${APP_DIR}"
           install -m 644 deploy/docker-compose.yml "${APP_DIR}/docker-compose.yml"
           install -m 700 deploy/deploy.sh "${APP_DIR}/deploy.sh"
           install -m 600 "${RUNNER_TEMP}/kw-space.env" "${APP_DIR}/.env.next"
+
+      - name: Start shared database
+        shell: bash
+        run: |
+          cd "${SHARED_DB_DIR}"
+          docker compose pull
+          docker compose up -d --wait --wait-timeout 180
 
       - name: Pull and deploy image
         shell: bash
