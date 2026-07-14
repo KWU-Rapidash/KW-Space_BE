@@ -1,0 +1,40 @@
+name: shared-db
+
+services:
+  mysql:
+    image: mysql:8.4@sha256:c831a0f11348d402b43d77453e17d770be2eef356615a2823fe0f5a0d6c8b9af
+    container_name: shared-mysql
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      - --innodb-buffer-pool-size=256M
+      - --max-connections=50
+      - --performance-schema=OFF
+      - --skip-name-resolve
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      shared-db:
+        aliases:
+          - shared-mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=root --password=$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: 768m
+    mem_reservation: 256m
+    cpus: 1.5
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+
+volumes:
+  mysql-data:
+    name: shared-db-mysql-data
+
+networks:
+  shared-db:
+    name: shared-db
