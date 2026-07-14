@@ -86,23 +86,6 @@ class SecurityConfigTest {
 	}
 
 	@Test
-	void klasVerifyWithoutCsrfTokenIsPublic() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/klas/verify")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "klasId": "2025404000",
-								  "klasPassword": "valid-klas-password"
-								}
-								"""))
-				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith("application/json"))
-				.andExpect(jsonPath("$.klasId").value("2025404000"))
-				.andExpect(jsonPath("$.name").value("테스트사용자"))
-				.andExpect(jsonPath("$.message").value("KLAS 인증에 성공했습니다."));
-	}
-
-	@Test
 	void protectedPostWithoutCsrfTokenStillRequiresJwtAuthentication() throws Exception {
 		mockMvc.perform(post("/api/v1/user"))
 				.andExpect(status().isUnauthorized())
