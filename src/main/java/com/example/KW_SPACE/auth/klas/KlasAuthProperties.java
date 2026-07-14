@@ -1,9 +1,7 @@
 package com.example.KW_SPACE.auth.klas;
 
 import java.net.URI;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDate;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "kw-space.auth.klas")
@@ -44,13 +42,4 @@ public record KlasAuthProperties(
 		}
 	}
 
-	public String resolveSelectYearhakgi(Clock clock) {
-		if (selectYearhakgi != null) {
-			return selectYearhakgi;
-		}
-
-		LocalDate now = LocalDate.now(clock);
-		int semester = now.getMonthValue() <= 6 ? 1 : 2;
-		return "%d,%d".formatted(now.getYear(), semester);
-	}
 }

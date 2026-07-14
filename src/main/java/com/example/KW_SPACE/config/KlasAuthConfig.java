@@ -3,6 +3,8 @@ package com.example.KW_SPACE.config;
 import com.example.KW_SPACE.auth.klas.FakeKlasAuthClient;
 import com.example.KW_SPACE.auth.klas.KlasAuthClient;
 import com.example.KW_SPACE.auth.klas.KlasAuthProperties;
+import com.example.KW_SPACE.auth.klas.KlasPageSemesterResolver;
+import com.example.KW_SPACE.auth.klas.KlasSemesterResolver;
 import com.example.KW_SPACE.auth.klas.RealKlasAuthClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
@@ -25,16 +27,27 @@ public class KlasAuthConfig {
 
 	@Bean
 	@Profile("!local & !test")
-	KlasAuthClient realKlasAuthClient(KlasAuthProperties properties, ObjectMapper objectMapper, Clock clock) {
+	RestClient klasRestClient(KlasAuthProperties properties) {
 		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
 		requestFactory.setConnectTimeout(properties.connectTimeout());
 		requestFactory.setReadTimeout(properties.readTimeout());
 
-		RestClient restClient = RestClient.builder()
+		return RestClient.builder()
 				.baseUrl(properties.baseUrl().toString())
 				.requestFactory(requestFactory)
 				.build();
+	}
 
-		return new RealKlasAuthClient(restClient, objectMapper, properties, clock);
+	@Bean
+	@Profile("!local & !test")
+	KlasSemesterResolver klasSemesterResolver(RestClient klasRestClient, KlasAuthProperties properties, Clock clock) {
+		return new KlasPageSemesterResolver(klasRestClient, properties, clock);
+	}
+
+	@Bean
+	@Profile("!local & !test")
+	KlasAuthClient realKlasAuthClient(RestClient klasRestClient, ObjectMapper objectMapper,
+			KlasAuthProperties properties, KlasSemesterResolver semesterResolver) {
+		return new RealKlasAuthClient(klasRestClient, objectMapper, properties, semesterResolver);
 	}
 }

@@ -4,10 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
 
 class KlasAuthPropertiesTest {
@@ -44,25 +41,22 @@ class KlasAuthPropertiesTest {
 	}
 
 	@Test
-	void resolvesYearSemesterFromConfiguredValueOrClock() {
-		Clock firstSemester = Clock.fixed(Instant.parse("2026-03-01T00:00:00Z"), ZoneId.of("Asia/Seoul"));
-		Clock secondSemester = Clock.fixed(Instant.parse("2026-09-01T00:00:00Z"), ZoneId.of("Asia/Seoul"));
-		KlasAuthProperties derived = new KlasAuthProperties(
+	void normalizesConfiguredSemester() {
+		KlasAuthProperties blank = new KlasAuthProperties(
 				URI.create("https://klas.example.test"),
 				Duration.ofSeconds(1),
 				Duration.ofSeconds(1),
-				""
+				" "
 		);
 		KlasAuthProperties configured = new KlasAuthProperties(
 				URI.create("https://klas.example.test"),
 				Duration.ofSeconds(1),
 				Duration.ofSeconds(1),
-				" 2025,2 "
+				" 2026,1 "
 		);
 
-		assertThat(derived.resolveSelectYearhakgi(firstSemester)).isEqualTo("2026,1");
-		assertThat(derived.resolveSelectYearhakgi(secondSemester)).isEqualTo("2026,2");
-		assertThat(configured.resolveSelectYearhakgi(firstSemester)).isEqualTo("2025,2");
+		assertThat(blank.selectYearhakgi()).isNull();
+		assertThat(configured.selectYearhakgi()).isEqualTo("2026,1");
 	}
 
 	@Test

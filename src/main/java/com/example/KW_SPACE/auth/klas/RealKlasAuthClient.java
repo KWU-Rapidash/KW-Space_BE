@@ -7,7 +7,6 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.spec.X509EncodedKeySpec;
-import java.time.Clock;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,14 +33,14 @@ public class RealKlasAuthClient implements KlasAuthClient {
 	private final RestClient restClient;
 	private final ObjectMapper objectMapper;
 	private final KlasAuthProperties properties;
-	private final Clock clock;
+	private final KlasSemesterResolver semesterResolver;
 
 	public RealKlasAuthClient(RestClient restClient, ObjectMapper objectMapper, KlasAuthProperties properties,
-			Clock clock) {
+			KlasSemesterResolver semesterResolver) {
 		this.restClient = restClient;
 		this.objectMapper = objectMapper;
 		this.properties = properties;
-		this.clock = clock;
+		this.semesterResolver = semesterResolver;
 	}
 
 	@Override
@@ -148,6 +147,7 @@ public class RealKlasAuthClient implements KlasAuthClient {
 	}
 
 	private KlasAuthResult requestStudentInfo(String requestedKlasId, String cookieHeader) {
+		String selectYearhakgi = semesterResolver.resolve(cookieHeader);
 		StudentInfoResponse[] response = restClient.post()
 				.uri(STUDENT_INFO_PATH)
 				.contentType(JSON_UTF8)
@@ -155,7 +155,7 @@ public class RealKlasAuthClient implements KlasAuthClient {
 				.header(HttpHeaders.ORIGIN, properties.baseUrl().toString())
 				.header(HttpHeaders.REFERER, STUDENT_INFO_REFERER)
 				.header(HttpHeaders.COOKIE, cookieHeader)
-				.body(new StudentInfoRequest(properties.resolveSelectYearhakgi(clock), "Y"))
+				.body(new StudentInfoRequest(selectYearhakgi, "Y"))
 				.retrieve()
 				.body(StudentInfoResponse[].class);
 

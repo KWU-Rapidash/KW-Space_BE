@@ -2,6 +2,10 @@ package com.example.KW_SPACE.auth.klas;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.http.HttpHeaders.COOKIE;
 import static org.springframework.http.HttpHeaders.SET_COOKIE;
 import static org.springframework.http.HttpMethod.POST;
@@ -21,10 +25,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAKey;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.Base64;
 import javax.crypto.Cipher;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,9 +46,9 @@ class RealKlasAuthClientTest {
 			"JSESSIONID=<session-cookie>; WMONID=<confirmed-wmonid>; KLASSESSION=<confirmed-session>";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
-	private final Clock clock = Clock.fixed(Instant.parse("2026-03-01T00:00:00Z"), ZoneId.of("Asia/Seoul"));
 	private KeyPair keyPair;
 	private MockRestServiceServer server;
+	private KlasSemesterResolver semesterResolver;
 	private RealKlasAuthClient client;
 
 	@BeforeEach
@@ -55,11 +56,13 @@ class RealKlasAuthClientTest {
 		keyPair = generateKeyPair();
 		RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
 		server = MockRestServiceServer.bindTo(builder).build();
+		semesterResolver = mock(KlasSemesterResolver.class);
+		given(semesterResolver.resolve(CONFIRMED_COOKIE_HEADER)).willReturn("2026,1");
 		client = new RealKlasAuthClient(
 				builder.build(),
 				objectMapper,
 				new KlasAuthProperties(URI.create(BASE_URL), Duration.ofSeconds(1), Duration.ofSeconds(1), null),
-				clock
+				semesterResolver
 		);
 	}
 
@@ -74,6 +77,7 @@ class RealKlasAuthClientTest {
 		assertThat(result.authenticated()).isTrue();
 		assertThat(result.klasId()).isEqualTo(KLAS_ID);
 		assertThat(result.name()).isEqualTo(STUDENT_NAME);
+		verify(semesterResolver).resolve(CONFIRMED_COOKIE_HEADER);
 		server.verify();
 	}
 
@@ -91,6 +95,7 @@ class RealKlasAuthClientTest {
 		KlasAuthResult result = client.verify(KLAS_ID, KLAS_PASSWORD);
 
 		assertThat(result).isEqualTo(KlasAuthResult.failure());
+		verifyNoInteractions(semesterResolver);
 		server.verify();
 	}
 
