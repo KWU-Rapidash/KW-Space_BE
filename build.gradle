@@ -43,5 +43,18 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'local-e2e'
+	}
+}
+
+tasks.register('klasE2e', Test) {
+	group = 'verification'
+	description = 'Runs the opt-in local E2E test against the real KLAS service.'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'local-e2e'
+	}
+	outputs.upToDateWhen { false }
 }
