@@ -94,7 +94,7 @@ public class OpenApiConfig {
 					arrayResponse("UserReservationList", reservationSchema())))
 				.addPathItem("/api/v1/reservations/{reservationId}", securedDelete("Reserve", "예약 취소",
 					"예약 식별자로 내 예약을 취소한다.",
-					List.of(pathParameter("reservationId", "예약 식별자"))))
+					List.of(longPathParameter("reservationId", "예약 식별자"))))
 				.addPathItem("/api/v1/user", new PathItem()
 					.get(securedOperation("User", "내 정보 조회", "내 학번, 이름, 전화번호를 조회한다.")
 						.responses(userInfoResponses()))
@@ -162,7 +162,8 @@ public class OpenApiConfig {
 
 	private static PathItem securedDelete(String tag, String summary, String description, List<Parameter> parameters) {
 		Operation operation = securedOperation(tag, summary, description)
-			.responses(noContent());
+			.responses(noContent()
+				.addApiResponse("409", new ApiResponse().description("이미 취소된 예약")));
 		parameters.forEach(operation::addParametersItem);
 		return new PathItem().delete(operation);
 	}
@@ -264,8 +265,9 @@ public class OpenApiConfig {
 		return new StringSchema().name(name).description(description);
 	}
 
-	private static Parameter pathParameter(String name, String description) {
-		return new Parameter().in("path").required(true).name(name).description(description).schema(new StringSchema());
+	private static Parameter longPathParameter(String name, String description) {
+		return new Parameter().in("path").required(true).name(name).description(description)
+			.schema(new IntegerSchema().format("int64"));
 	}
 
 	private static Parameter queryParameter(String name, String description) {
@@ -289,9 +291,10 @@ public class OpenApiConfig {
 
 	private static Schema<?> reservationResponse() {
 		return object("ReservationResponse",
-			new StringSchema().name("reservationId").description("예약 식별자"),
-			new StringSchema().name("date").description("예약 날짜"),
+			new IntegerSchema().format("int64").name("reservationId").description("예약 식별자"),
+			classroomIdSchema().name("classroomId"),
 			new StringSchema().name("classroomNumber").description("강의실 번호"),
+			new StringSchema().name("date").description("예약 날짜"),
 			new StringSchema().name("startTime").description("예약 시작 시간"),
 			new StringSchema().name("endTime").description("예약 종료 시간"),
 			reservationStatusSchema().name("status"));
@@ -299,7 +302,7 @@ public class OpenApiConfig {
 
 	private static Schema<?> reservationSchema() {
 		return object("UserReservationResponse",
-			new StringSchema().name("reservationId").description("예약 식별자"),
+			new IntegerSchema().format("int64").name("reservationId").description("예약 식별자"),
 			new StringSchema().name("date").description("예약 날짜"),
 			new StringSchema().name("classroom").description("강의실 표시명"),
 			new StringSchema().name("reserverName").description("예약자 정보"),

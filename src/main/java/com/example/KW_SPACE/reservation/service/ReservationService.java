@@ -1,0 +1,89 @@
+package com.example.KW_SPACE.reservation.service;
+
+import com.example.KW_SPACE.classroom.domain.Classroom;
+import com.example.KW_SPACE.classroom.domain.ClassroomRepository;
+import com.example.KW_SPACE.reservation.domain.Reservation;
+import com.example.KW_SPACE.reservation.domain.ReservationRepository;
+import com.example.KW_SPACE.reservation.domain.ReservationStatus;
+import com.example.KW_SPACE.reservation.domain.TimeSlot;
+import com.example.KW_SPACE.reservation.dto.ReservationCreateRequest;
+import com.example.KW_SPACE.reservation.dto.ReservationCreateResponse;
+import com.example.KW_SPACE.reservation.dto.UserReservationResponse;
+import com.example.KW_SPACE.reservation.exception.ReservationErrorCode;
+import com.example.KW_SPACE.reservation.exception.ReservationException;
+import com.example.KW_SPACE.user.domain.User;
+import com.example.KW_SPACE.user.domain.UserRepository;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ReservationService {
+
+	private final ClassroomRepository classroomRepository;
+	private final ReservationRepository reservationRepository;
+	private final UserRepository userRepository;
+	private final Clock clock;
+
+	public ReservationCreateResponse create(Long userId, ReservationCreateRequest request) {
+		validateSlot(request);
+		validateNotPast(request);
+
+		// 강의실 행을 비관적 쓰기 락으로 잡아 동일 강의실 동시 예약을 직렬화한다.
+		Classroom classroom = classroomRepository.findByCodeForUpdate(request.classroomId())
+				.orElseThrow(() -> new ReservationException(ReservationErrorCode.CLASSROOM_NOT_FOUND));
+
+		if (reservationRepository.existsOverlappingReservation(
+				classroom, request.date(), request.startTime(), request.endTime())) {
+			throw new ReservationException(ReservationErrorCode.RESERVATION_CONFLICT);
+		}
+
+		User user = userRepository.getReferenceById(userId);
+		Reservation reservation = reservationRepository.save(
+				Reservation.create(classroom, user, request.date(), request.startTime(), request.endTime()));
+
+		return ReservationCreateResponse.of(reservation);
+	}
+
+	public void cancel(Long userId, Long reservationId) {
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+		// 남의 예약은 존재 여부를 노출하지 않도록 NOT_FOUND로 통일한다.
+		if (!reservation.getUser().getId().equals(userId)) {
+			throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND);
+		}
+		if (reservation.getStatus() == ReservationStatus.CANCELED) {
+			throw new ReservationException(ReservationErrorCode.ALREADY_CANCELED);
+		}
+
+		reservation.cancel();
+	}
+
+	@Transactional(readOnly = true)
+	public List<UserReservationResponse> getUserReservations(Long userId, ReservationStatus status) {
+		return reservationRepository.findUserReservations(userId, status).stream()
+				.map(UserReservationResponse::of)
+				.toList();
+	}
+
+	private void validateSlot(ReservationCreateRequest request) {
+		if (!TimeSlot.isValidSlot(request.startTime(), request.endTime())) {
+			throw new ReservationException(ReservationErrorCode.INVALID_SLOT);
+		}
+	}
+
+	private void validateNotPast(ReservationCreateRequest request) {
+		LocalDateTime now = LocalDateTime.now(clock);
+		boolean past = request.date().isBefore(now.toLocalDate())
+				|| (request.date().isEqual(now.toLocalDate()) && request.startTime().isBefore(now.toLocalTime()));
+		if (past) {
+			throw new ReservationException(ReservationErrorCode.PAST_TIME);
+		}
+	}
+}

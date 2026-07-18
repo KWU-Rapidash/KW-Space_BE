@@ -34,4 +34,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	List<Reservation> findByUserId(Long userId);
 
 	List<Reservation> findByUserIdAndStatus(Long userId, ReservationStatus status);
+
+	@Query("""
+			select r from Reservation r
+			join fetch r.classroom
+			join fetch r.user
+			where r.user.id = :userId
+			  and (:status is null or r.status = :status)
+			order by r.date desc, r.startTime desc
+			""")
+	List<Reservation> findUserReservations(
+			@Param("userId") Long userId,
+			@Param("status") ReservationStatus status);
 }

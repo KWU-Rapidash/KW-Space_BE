@@ -4,6 +4,8 @@ import com.example.KW_SPACE.auth.exception.AuthErrorCode;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponse;
 import com.example.KW_SPACE.auth.exception.AuthException;
 import com.example.KW_SPACE.auth.klas.KlasAuthServerUnavailableException;
+import com.example.KW_SPACE.reservation.exception.ReservationErrorResponse;
+import com.example.KW_SPACE.reservation.exception.ReservationException;
 import com.example.KW_SPACE.user.application.UserErrorCode;
 import com.example.KW_SPACE.user.application.UserException;
 import com.example.KW_SPACE.user.application.UserNotFoundException;
@@ -82,5 +84,12 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(UserNotFoundException.class)
 	public ResponseEntity<AuthErrorResponse> handleUserNotFound() {
 		return toResponse(AuthErrorCode.AUTH_INVALID_CREDENTIALS);
+	}
+
+	@ExceptionHandler(ReservationException.class)
+	public ResponseEntity<ReservationErrorResponse> handleReservationException(ReservationException exception) {
+		return ResponseEntity
+				.status(exception.getErrorCode().getStatus())
+				.body(ReservationErrorResponse.from(exception.getErrorCode()));
 	}
 }

@@ -25,9 +25,9 @@ public class UserService {
 		this.passwordEncoder = passwordEncoder;
 	}
 
-	public UserInfoResponse getMyInfo(String klasId) {
-		User user = userRepository.findByKlasId(klasId)
-				.orElseThrow(() -> new UserNotFoundException(klasId));
+	public UserInfoResponse getMyInfo(Long userId) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException(String.valueOf(userId)));
 
 		return UserInfoResponse.from(user);
 	}

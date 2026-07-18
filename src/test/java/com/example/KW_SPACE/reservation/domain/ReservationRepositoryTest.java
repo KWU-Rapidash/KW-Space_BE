@@ -138,4 +138,65 @@ class ReservationRepositoryTest {
 		assertThat(reservationRepository.findByClassroomIdAndDateAndStatus(
 				classroom.getId(), DATE, ReservationStatus.RESERVED)).hasSize(1);
 	}
+
+	@Test
+	void allowsRebookingAfterCancellation() {
+		Reservation reservation = reservationRepository.saveAndFlush(
+				Reservation.create(classroom, user, DATE, LocalTime.of(10, 0), LocalTime.of(11, 0)));
+		assertThat(overlaps(LocalTime.of(10, 0), LocalTime.of(11, 0))).isTrue();
+
+		reservation.cancel();
+		reservationRepository.saveAndFlush(reservation);
+
+		// 취소(소프트 삭제) 후 동일 시간대가 다시 예약 가능해야 한다.
+		assertThat(overlaps(LocalTime.of(10, 0), LocalTime.of(11, 0))).isFalse();
+	}
+
+	@Test
+	void findUserReservationsReturnsAllWhenStatusIsNullOrderedByDateDesc() {
+		LocalDate earlier = DATE;
+		LocalDate later = DATE.plusDays(1);
+		reservationRepository.saveAndFlush(Reservation.create(classroom, user, earlier, LocalTime.of(9, 0), LocalTime.of(10, 0)));
+		reservationRepository.saveAndFlush(Reservation.create(classroom, user, later, LocalTime.of(9, 0), LocalTime.of(10, 0)));
+
+		assertThat(reservationRepository.findUserReservations(user.getId(), null))
+				.hasSize(2)
+				.extracting(Reservation::getDate)
+				.containsExactly(later, earlier);
+	}
+
+	@Test
+	void findUserReservationsOrdersSameDateByStartTimeDesc() {
+		reserve(LocalTime.of(9, 0), LocalTime.of(10, 0));
+		reserve(LocalTime.of(13, 0), LocalTime.of(14, 0));
+
+		assertThat(reservationRepository.findUserReservations(user.getId(), null))
+				.extracting(Reservation::getStartTime)
+				.containsExactly(LocalTime.of(13, 0), LocalTime.of(9, 0));
+	}
+
+	@Test
+	void findUserReservationsFiltersByStatus() {
+		reserve(LocalTime.of(9, 0), LocalTime.of(10, 0));
+		reserveCanceled(LocalTime.of(13, 0), LocalTime.of(14, 0));
+
+		assertThat(reservationRepository.findUserReservations(user.getId(), ReservationStatus.RESERVED))
+				.hasSize(1)
+				.allSatisfy(reservation -> assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RESERVED));
+		assertThat(reservationRepository.findUserReservations(user.getId(), ReservationStatus.CANCELED))
+				.hasSize(1)
+				.allSatisfy(reservation -> assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED));
+	}
+
+	@Test
+	void findUserReservationsReturnsOnlyOwnReservations() {
+		User other = userRepository.save(User.create("2025404999", "김타인", "010-0000-0000", "encoded-password"));
+		reserve(LocalTime.of(9, 0), LocalTime.of(10, 0));
+		reservationRepository.saveAndFlush(
+				Reservation.create(classroom, other, DATE, LocalTime.of(13, 0), LocalTime.of(14, 0)));
+
+		assertThat(reservationRepository.findUserReservations(user.getId(), null))
+				.hasSize(1)
+				.allSatisfy(reservation -> assertThat(reservation.getUser().getId()).isEqualTo(user.getId()));
+	}
 }
