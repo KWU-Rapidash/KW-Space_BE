@@ -46,8 +46,8 @@ public class KlasAuthConfig {
 
 	@Bean
 	@Profile("!local & !test")
-	KlasAuthClient realKlasAuthClient(RestClient klasRestClient, ObjectMapper objectMapper,
-			KlasAuthProperties properties, KlasSemesterResolver semesterResolver) {
-		return new RealKlasAuthClient(klasRestClient, objectMapper, properties, semesterResolver);
+	KlasAuthClient realKlasAuthClient(RestClient klasRestClient, KlasAuthProperties properties,
+			KlasSemesterResolver semesterResolver) {
+		return new RealKlasAuthClient(klasRestClient, new ObjectMapper(), properties, semesterResolver);
 	}
 }
