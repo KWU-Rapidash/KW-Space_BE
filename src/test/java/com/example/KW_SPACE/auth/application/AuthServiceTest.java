@@ -32,11 +32,13 @@ class AuthServiceTest {
 	private final KlasAuthClient klasAuthClient = mock(KlasAuthClient.class);
 	private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 	private final JwtTokenProvider jwtTokenProvider = mock(JwtTokenProvider.class);
+	private final PasswordResetUpdater passwordResetUpdater = mock(PasswordResetUpdater.class);
 	private final AuthService authService = new AuthService(
 			userRepository,
 			klasAuthClient,
 			passwordEncoder,
-			jwtTokenProvider
+			jwtTokenProvider,
+			passwordResetUpdater
 	);
 
 	@Test
@@ -195,7 +197,7 @@ class AuthServiceTest {
 	}
 
 	@Test
-	void resetPasswordVerifiesKlasAndUpdatesPasswordHashAndTokenVersion() {
+	void resetPasswordVerifiesKlasAndDelegatesPasswordUpdate() {
 		User user = User.create("2025404000", "이효원", null, "old-encoded-password");
 		given(userRepository.findByKlasId("2025404000")).willReturn(Optional.of(user));
 		given(klasAuthClient.verify("2025404000", "valid-klas-password"))
@@ -208,10 +210,7 @@ class AuthServiceTest {
 				"new-service-password"
 		));
 
-		assertThat(user.getPasswordHash()).isEqualTo("new-encoded-password");
-		assertThat(user.getPasswordHash()).isNotEqualTo("valid-klas-password");
-		assertThat(user.getPasswordHash()).isNotEqualTo("new-service-password");
-		assertThat(user.getTokenVersion()).isEqualTo(1);
+		verify(passwordResetUpdater).update("2025404000", "new-encoded-password");
 		verifyNoMoreInteractions(jwtTokenProvider);
 	}
 
@@ -227,7 +226,7 @@ class AuthServiceTest {
 				.isInstanceOfSatisfying(AuthException.class, exception ->
 						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_USER_NOT_FOUND));
 
-		verifyNoInteractions(klasAuthClient, passwordEncoder, jwtTokenProvider);
+		verifyNoInteractions(klasAuthClient, passwordEncoder, jwtTokenProvider, passwordResetUpdater);
 	}
 
 	@Test
@@ -245,9 +244,7 @@ class AuthServiceTest {
 				.isInstanceOfSatisfying(AuthException.class, exception ->
 						assertThat(exception.getErrorCode()).isEqualTo(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS));
 
-		assertThat(user.getPasswordHash()).isEqualTo("old-encoded-password");
-		assertThat(user.getTokenVersion()).isZero();
-		verifyNoInteractions(passwordEncoder, jwtTokenProvider);
+		verifyNoInteractions(passwordEncoder, jwtTokenProvider, passwordResetUpdater);
 	}
 
 	private void setUserId(User user, Long id) {

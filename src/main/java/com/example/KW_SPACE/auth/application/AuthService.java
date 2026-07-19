@@ -27,13 +27,15 @@ public class AuthService {
 	private final KlasAuthClient klasAuthClient;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final PasswordResetUpdater passwordResetUpdater;
 
 	public AuthService(UserRepository userRepository, KlasAuthClient klasAuthClient, PasswordEncoder passwordEncoder,
-			JwtTokenProvider jwtTokenProvider) {
+			JwtTokenProvider jwtTokenProvider, PasswordResetUpdater passwordResetUpdater) {
 		this.userRepository = userRepository;
 		this.klasAuthClient = klasAuthClient;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
+		this.passwordResetUpdater = passwordResetUpdater;
 	}
 
 	public SignupResponse signup(SignupRequest request) {
@@ -66,16 +68,15 @@ public class AuthService {
 		return new LoginResult(accessToken, new LoginResponse(true, "로그인에 성공했습니다."));
 	}
 
-	@Transactional
 	public void resetPassword(PasswordResetRequest request) {
-		User user = userRepository.findByKlasId(request.klasId())
+		userRepository.findByKlasId(request.klasId())
 				.orElseThrow(() -> new AuthException(AuthErrorCode.AUTH_USER_NOT_FOUND));
 		KlasAuthResult klasAuthResult = klasAuthClient.verify(request.klasId(), request.klasPassword());
 		if (!klasAuthResult.authenticated()) {
 			throw new AuthException(AuthErrorCode.AUTH_INVALID_KLAS_CREDENTIALS);
 		}
 
-		user.resetPassword(passwordEncoder.encode(request.newPassword()));
+		passwordResetUpdater.update(request.klasId(), passwordEncoder.encode(request.newPassword()));
 	}
 
 	private User saveUser(String klasId, String name, String passwordHash) {
