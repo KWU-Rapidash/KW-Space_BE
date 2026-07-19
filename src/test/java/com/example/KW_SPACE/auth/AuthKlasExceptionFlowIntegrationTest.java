@@ -19,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -64,7 +65,10 @@ class AuthKlasExceptionFlowIntegrationTest {
 	void passwordResetReturnsServiceUnavailableWithoutChangingUserWhenKlasClientThrowsException() throws Exception {
 		User user = userRepository.saveAndFlush(User.create(KLAS_ID, "테스트사용자", null, "old-password-hash"));
 		given(klasAuthClient.verify(KLAS_ID, KLAS_PASSWORD))
-				.willThrow(new KlasAuthServerUnavailableException("KLAS network error"));
+				.willAnswer(invocation -> {
+					assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+					throw new KlasAuthServerUnavailableException("KLAS network error");
+				});
 
 		mockMvc.perform(post("/api/v1/auth/password-reset")
 						.contentType(MediaType.APPLICATION_JSON)

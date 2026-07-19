@@ -219,7 +219,8 @@ public class OpenApiConfig {
 			.addApiResponse("400", new ApiResponse().description("필수 입력값 누락"))
 			.addApiResponse("401", new ApiResponse().description("KLAS 인증 실패"))
 			.addApiResponse("409", new ApiResponse().description("이미 가입된 사용자"))
-			.addApiResponse("422", new ApiResponse().description("입력값 형식 오류"));
+			.addApiResponse("422", new ApiResponse().description("입력값 형식 오류"))
+			.addApiResponse("503", new ApiResponse().description("KLAS 서버를 사용할 수 없음"));
 	}
 
 	private static ApiResponses passwordResetResponses() {

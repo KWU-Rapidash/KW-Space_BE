@@ -20,7 +20,11 @@
    - `POST https://klas.kw.ac.kr/usr/cmn/login/LoginConfirm.do`
    - `loginToken`과 1단계 세션 쿠키를 함께 보낸다.
    - 성공 조건을 만족하면 KLAS 인증 성공으로 본다.
-4. 사용자 학적/이름 조회
+4. 현재 학기 조회
+   - `GET https://klas.kw.ac.kr/std/cps/inqire/StandStdPage.do`
+   - 로그인 성공 세션으로 페이지의 `selectYear`, `selectHakgi` 초기화 값을 조회한다.
+   - 페이지 값이 없으면 검증된 운영 설정을 사용하고, 둘 다 없으면 서버 오류로 처리한다.
+5. 사용자 학적/이름 조회
    - `POST https://klas.kw.ac.kr/std/cps/inqire/ToeicInfoStd.do`
    - 로그인 성공 세션 쿠키를 그대로 사용한다.
    - 응답 배열 첫 항목의 `hakbun`, `kname`을 `KlasAuthResult`의 `klasId`, `name`으로 매핑한다.
@@ -76,6 +80,8 @@ Accept: application/json, text/plain, */*
 ```
 
 - payload JSON 문자열을 RSA PKCS#1 v1.5 padding으로 암호화한다.
+- payload는 공개키 modulus 기준 PKCS#1 v1.5 최대 평문 크기(`keyBytes - 11`) 이하여야 한다.
+- 최대 크기를 초과하면 KLAS 요청을 계속하지 않고 인증 실패로 처리한다.
 - 암호화 결과를 Base64 문자열로 만든다.
 - `klasPassword`와 생성된 `loginToken`은 로그, 예외 메시지, 테스트 fixture, JWT claim, DB에 저장하지 않는다.
 
@@ -134,6 +140,29 @@ Cookie: <LoginSecurity.do에서 받은 KLAS 세션 쿠키>
 - HTTP `4xx`, `5xx`, JSON 파싱 실패, HTML 응답, `response.userId` 누락은 KLAS 서버 오류로 처리한다.
 - 서버 오류는 `KlasAuthServerUnavailableException`으로 표현한다.
 
+## 현재 학기 조회
+
+로그인 성공 후 같은 세션으로 석차 조회 페이지를 요청한다.
+
+```http
+GET /std/cps/inqire/StandStdPage.do
+Accept: text/html, */*
+Cookie: <LoginConfirm.do 이후 유효한 KLAS 세션 쿠키>
+```
+
+페이지 초기화 데이터의 `selectYear`, `selectHakgi`를 추출하고 다음 조건을 검증한다.
+
+- `selectYear`는 4자리 숫자다.
+- `2000 <= selectYear <= 현재 연도 + 1`이다.
+- `selectHakgi`는 `1` 또는 `2`다.
+
+검증된 값은 `yyyy,semester` 형식으로 조합한다. 페이지 조회 실패, 로그인 페이지 응답, 값 누락 또는 범위 오류 시
+`KLAS_SELECT_YEARHAKGI` 운영 설정을 검증해 fallback으로 사용한다. 페이지와 설정에서 모두 값을 얻지 못하면
+`KlasAuthServerUnavailableException`으로 처리한다. 달력의 월을 기준으로 학기를 계산하지 않는다.
+
+검증된 학기 문자열만 1시간 캐시하며 Cookie, 학번, 이름, HTML 응답은 캐시하지 않는다. 운영 설정 변경은 애플리케이션
+재시작으로 resolver 캐시를 초기화한다.
+
 ## 이름 조회
 
 로그인 성공 후 같은 세션으로 아래 API를 호출한다.
@@ -156,7 +185,7 @@ Cookie: <LoginConfirm.do 이후 유효한 KLAS 세션 쿠키>
 }
 ```
 
-`selectYearhakgi`는 현재 학년도/학기 값을 사용한다. 실제 구현에서 학기 값을 별도로 확정하지 못하면, KLAS에서 쓰는 현재 학기 기본값을 조회하거나 설정값으로 주입한다.
+`selectYearhakgi`는 위 현재 학기 조회에서 검증한 값을 사용한다.
 
 성공 응답 예:
 
