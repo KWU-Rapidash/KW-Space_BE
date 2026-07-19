@@ -28,7 +28,7 @@ public class RealKlasAuthClient implements KlasAuthClient {
 	private static final String LOGIN_SECURITY_PATH = "/usr/cmn/login/LoginSecurity.do";
 	private static final String LOGIN_CONFIRM_PATH = "/usr/cmn/login/LoginConfirm.do";
 	private static final String STUDENT_INFO_PATH = "/std/cps/inqire/ToeicInfoStd.do";
-	private static final String STUDENT_INFO_REFERER = "https://klas.kw.ac.kr/std/cps/inqire/StandStdPage.do";
+	private static final String STUDENT_INFO_REFERER_PATH = "/std/cps/inqire/StandStdPage.do";
 
 	private final RestClient restClient;
 	private final ObjectMapper objectMapper;
@@ -153,7 +153,7 @@ public class RealKlasAuthClient implements KlasAuthClient {
 				.contentType(JSON_UTF8)
 				.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN, MediaType.ALL)
 				.header(HttpHeaders.ORIGIN, properties.baseUrl().toString())
-				.header(HttpHeaders.REFERER, STUDENT_INFO_REFERER)
+				.header(HttpHeaders.REFERER, properties.baseUrl().resolve(STUDENT_INFO_REFERER_PATH).toString())
 				.header(HttpHeaders.COOKIE, cookieHeader)
 				.body(new StudentInfoRequest(selectYearhakgi, "Y"))
 				.retrieve()

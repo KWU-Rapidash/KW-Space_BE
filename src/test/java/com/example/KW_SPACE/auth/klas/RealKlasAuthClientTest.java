@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.http.HttpHeaders.COOKIE;
+import static org.springframework.http.HttpHeaders.ORIGIN;
+import static org.springframework.http.HttpHeaders.REFERER;
 import static org.springframework.http.HttpHeaders.SET_COOKIE;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -215,6 +217,8 @@ class RealKlasAuthClientTest {
 	private void expectStudentInfoSuccess() {
 		server.expect(requestTo(BASE_URL + "/std/cps/inqire/ToeicInfoStd.do"))
 				.andExpect(method(POST))
+				.andExpect(header(ORIGIN, BASE_URL))
+				.andExpect(header(REFERER, BASE_URL + "/std/cps/inqire/StandStdPage.do"))
 				.andExpect(header(COOKIE, CONFIRMED_COOKIE_HEADER))
 				.andExpect(content().json("""
 						{"selectYearhakgi":"2026,1","selectChangeYn":"Y"}
