@@ -140,6 +140,20 @@ class ReservationRepositoryTest {
 	}
 
 	@Test
+	void deletesReservationsByUserId() {
+		User other = userRepository.save(User.create("2025404999", "김타인", "010-0000-0000", "encoded-password"));
+		reserve(LocalTime.of(10, 0), LocalTime.of(11, 0));
+		reservationRepository.saveAndFlush(
+				Reservation.create(classroom, other, DATE, LocalTime.of(13, 0), LocalTime.of(14, 0)));
+
+		int deletedCount = reservationRepository.deleteByUserId(user.getId());
+
+		assertThat(deletedCount).isEqualTo(1);
+		assertThat(reservationRepository.findByUserId(user.getId())).isEmpty();
+		assertThat(reservationRepository.findByUserId(other.getId())).hasSize(1);
+	}
+
+	@Test
 	void allowsRebookingAfterCancellation() {
 		Reservation reservation = reservationRepository.saveAndFlush(
 				Reservation.create(classroom, user, DATE, LocalTime.of(10, 0), LocalTime.of(11, 0)));

@@ -1,5 +1,7 @@
 package com.example.KW_SPACE.user.application;
 
+import com.example.KW_SPACE.reservation.domain.Reservation;
+import com.example.KW_SPACE.reservation.domain.ReservationRepository;
 import com.example.KW_SPACE.user.domain.User;
 import com.example.KW_SPACE.user.domain.UserRepository;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
@@ -18,10 +20,13 @@ public class UserService {
 	private static final String PHONE_NUMBER_UNIQUE_CONSTRAINT = "uk_users_phone_number";
 
 	private final UserRepository userRepository;
+	private final ReservationRepository reservationRepository;
 	private final PasswordEncoder passwordEncoder;
 
-	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	public UserService(UserRepository userRepository, ReservationRepository reservationRepository,
+			PasswordEncoder passwordEncoder) {
 		this.userRepository = userRepository;
+		this.reservationRepository = reservationRepository;
 		this.passwordEncoder = passwordEncoder;
 	}
 
@@ -59,6 +64,16 @@ public class UserService {
 		}
 
 		user.changePasswordHash(passwordEncoder.encode(newPassword));
+	}
+
+	@Transactional
+	public void withdraw(Long userId) {
+		User user = userRepository.findByIdForUpdate(userId)
+				.orElseThrow(() -> new UserNotFoundException(String.valueOf(userId)));
+
+		reservationRepository.deleteByUserId(userId);
+		userRepository.delete(user);
+		userRepository.flush();
 	}
 
 	private User saveUser(User user) {

@@ -5,13 +5,16 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.KW_SPACE.auth.cookie.AuthCookieService;
 import com.example.KW_SPACE.auth.exception.AuthErrorResponseWriter;
 import com.example.KW_SPACE.auth.jwt.JwtTokenProvider;
 import com.example.KW_SPACE.auth.security.CustomUserDetails;
@@ -24,12 +27,15 @@ import com.example.KW_SPACE.user.application.UserNotFoundException;
 import com.example.KW_SPACE.user.application.UserService;
 import com.example.KW_SPACE.user.presentation.dto.PhoneUpdateResponse;
 import com.example.KW_SPACE.user.presentation.dto.UserInfoResponse;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,6 +49,9 @@ class UserControllerTest {
 
 	@MockitoBean
 	private UserService userService;
+
+	@MockitoBean
+	private AuthCookieService authCookieService;
 
 	@MockitoBean
 	private JwtTokenProvider jwtTokenProvider;
@@ -270,6 +279,33 @@ class UserControllerTest {
 								"""))
 				.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.code").value("AUTH_PASSWORD_POLICY_VIOLATION"));
+
+		verifyNoInteractions(userService);
+	}
+
+	@Test
+	void withdrawReturnsNoContentAndDeletesCookie() throws Exception {
+		CustomUserDetails userDetails = authenticatedUserDetails(1L);
+		given(authCookieService.deleteAccessTokenCookie())
+				.willReturn(ResponseCookie.from("accessToken", "")
+						.path("/")
+						.maxAge(Duration.ZERO)
+						.httpOnly(true)
+						.build());
+
+		mockMvc.perform(delete("/api/v1/user")
+						.with(user(userDetails)))
+				.andExpect(status().isNoContent())
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString("Max-Age=0")));
+
+		verify(userService).withdraw(1L);
+	}
+
+	@Test
+	void withdrawRequiresAuthentication() throws Exception {
+		mockMvc.perform(delete("/api/v1/user"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
 
 		verifyNoInteractions(userService);
 	}
